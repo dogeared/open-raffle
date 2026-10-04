@@ -33,7 +33,7 @@ import org.openraffle.service.EventService;
 import org.openraffle.service.OrganizerDirectory;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.ResponsiveColumns;
-import org.openraffle.ui.admin.ParticipantsView;
+import org.openraffle.ui.admin.PrizesView;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -91,7 +91,7 @@ public class EventsView extends VerticalLayout implements BeforeEnterObserver {
         if (!currentUser.isAdmin()) {
             List<Event> mine = eventService.findAccessible();
             if (mine.size() == 1) {
-                event.forwardTo(ParticipantsView.class, params(mine.get(0)));
+                event.forwardTo(PrizesView.class, params(mine.get(0)));
                 return;
             }
         }
@@ -160,7 +160,7 @@ public class EventsView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private void open(Event e) {
-        getUI().ifPresent(ui -> ui.navigate(ParticipantsView.class, params(e)));
+        getUI().ifPresent(ui -> ui.navigate(PrizesView.class, params(e)));
     }
 
     private static RouteParameters params(Event e) {

@@ -235,6 +235,9 @@ public class DrawView extends VerticalLayout implements BeforeEnterObserver {
             Div text = new Div(label, new Div(who));
             row.add(text);
             row.expand(text);
+            if (rank > 0) {
+                row.add(removeFromList(prize, winner));
+            }
             return row;
         }
 
@@ -254,7 +257,23 @@ public class DrawView extends VerticalLayout implements BeforeEnterObserver {
         });
         row.add(claimed);
         row.expand(claimed);
+        if (rank > 0) {
+            row.add(removeFromList(prize, winner));
+        }
         return row;
+    }
+
+    /** Takes the prize off the winner's list (and releases their claim on it, if any). */
+    private Button removeFromList(Prize prize, Participant winner) {
+        Button remove = new Button(VaadinIcon.CLOSE_SMALL.create(), e -> {
+            participantService.removeFromWishlist(winner, prize);
+            notify("Removed " + prize.getName() + " from " + winner.getName() + "'s list", NotificationVariant.LUMO_CONTRAST);
+            lookup(lastTicket);
+        });
+        remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+        remove.setAriaLabel("Remove " + prize.getName() + " from the list");
+        remove.setTooltipText("Remove from their list");
+        return remove;
     }
 
     private static void notify(String text, NotificationVariant variant) {

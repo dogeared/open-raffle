@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Route(value = "events/:eventId", layout = MainLayout.class)
+@Route(value = "events/:eventId/participants", layout = MainLayout.class)
 @PageTitle("Participants | Open Raffle")
 @RolesAllowed({SecurityConfig.ROLE_ORGANIZER, SecurityConfig.ROLE_ADMIN})
 public class ParticipantsView extends VerticalLayout implements BeforeEnterObserver {
@@ -86,15 +86,17 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         Grid.Column<Participant> count = grid.addColumn(Participant::getTicketCount)
                 .setHeader("Count").setKey("count").setWidth("6em").setFlexGrow(0);
         // The wishlist summary opens a dialog with the full ranked list.
-        Grid.Column<Participant> wishlist = grid.addComponentColumn(p -> {
+        grid.addComponentColumn(p -> {
             if (p.getWishlist().isEmpty()) {
                 return new Span("—");
             }
             String summary = p.getWishlist().stream().map(Prize::getName).collect(Collectors.joining(" › "));
             Button open = new Button(summary, e -> showWishlist(p));
             open.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-            open.setTooltipText("Show " + p.getName() + "'s picks");
-            open.getStyle().set("white-space", "normal").set("text-align", "left");
+            open.setTooltipText(summary);
+            // One line with an ellipsis: the dialog has the full list, and organizers are on
+            // laptops or tablets where this column has room.
+            open.addClassNames("wishlist-summary");
             return open;
         }).setHeader("Wishlist (in order)").setKey("wishlist").setWidth("8em").setFlexGrow(3);
         grid.addComponentColumn(p -> {
@@ -109,11 +111,11 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
                     .addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL));
             return actions;
         }).setHeader("").setKey("actions").setAutoWidth(true).setFlexGrow(0);
-        // Long names, ticket lists and wishlists wrap onto more lines instead of being cut off;
-        // on a phone the count and wishlist columns give way (both are a tap away via the
-        // name and wishlist dialogs).
+        // Long names and ticket lists wrap onto more lines instead of being cut off; the
+        // wishlist stays one truncated line (the dialog has it all), and on a phone the
+        // count column gives way.
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
-        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(count, wishlist));
+        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(count));
         grid.setSizeFull();
 
         add(toolbar, grid, pages);
@@ -314,13 +316,30 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         Dialog dialog = new Dialog(participant.getName() + "'s picks");
         OrderedList list = new OrderedList();
         for (Prize prize : participant.getWishlist()) {
-            ListItem item = new ListItem(prize.getName());
+            ListItem item = new ListItem();
+            Span name = new Span(prize.getName());
+            item.add(name);
             if (prize.isClaimed()) {
                 Span claimed = new Span(prize.isClaimedBy(participant)
                         ? " — they took this one" : " — claimed by " + prize.getClaimedBy().getName());
                 claimed.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.TERTIARY);
                 item.add(claimed);
             }
+            // Organizers can take a prize off the list, e.g. one the participant no longer wants.
+            Button remove = new Button(VaadinIcon.CLOSE_SMALL.create(), e -> {
+                Participant updated = participantService.removeFromWishlist(participant, prize);
+                dialog.close();
+                refresh();
+                Notification.show("Removed " + prize.getName() + " from " + participant.getName() + "'s picks");
+                if (!updated.getWishlist().isEmpty()) {
+                    showWishlist(updated);
+                }
+            });
+            remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+            remove.setAriaLabel("Remove " + prize.getName() + " from the list");
+            remove.setTooltipText("Remove from their list");
+            remove.addClassNames(LumoUtility.Margin.Left.SMALL);
+            item.add(remove);
             list.add(item);
         }
         Paragraph hint = new Paragraph("Most wanted first, as ranked by " + participant.getName() + ".");

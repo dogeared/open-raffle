@@ -34,7 +34,7 @@ import org.openraffle.ui.ResponsiveColumns;
 import java.util.List;
 
 
-@Route(value = "events/:eventId/prizes", layout = MainLayout.class)
+@Route(value = "events/:eventId", layout = MainLayout.class)
 @PageTitle("Prizes | Open Raffle")
 @RolesAllowed({SecurityConfig.ROLE_ORGANIZER, SecurityConfig.ROLE_ADMIN})
 public class PrizesView extends VerticalLayout implements BeforeEnterObserver {

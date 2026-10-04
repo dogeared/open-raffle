@@ -107,7 +107,7 @@ class DrawViewTest extends KaribuTest {
         Participant nigel = participant(fair, "Nigel", 900, 901);
         nigel.setRanges(new java.util.ArrayList<>(List.of(TicketRange.of("987-001", "987-100"))));
         participants.save(nigel);
-        navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
         navigate("events/" + fair.getId() + "/draw");
 
         lookUp("987-042");
@@ -154,6 +154,22 @@ class DrawViewTest extends KaribuTest {
         assertThat(_get(Span.class, spec -> spec.withText("claimed by Ann"))).isNotNull();
         assertThat(_get(Span.class, spec -> spec.withPredicate(s -> s.getText().startsWith("Everything on their list")))).isNotNull();
         assertThat(_get(Details.class).isOpened()).isTrue();
+    }
+
+    @Test
+    void organizersCanTakeAPrizeOffTheWinnersListFromTheDrawPage() {
+        openDraw();
+        lookUp(7);
+        _setValue(_get(Checkbox.class, spec -> spec.withLabel("Bike")), true);
+
+        _click(_get(Button.class, spec -> spec.withPredicate(b -> "Remove Bike from the list".equals(b.getAriaLabel().orElse("")))));
+
+        Participant reloaded = participants.findById(ann.getId()).orElseThrow();
+        assertThat(reloaded.getWishlist()).extracting(Prize::getName).containsExactly("Book");
+        assertThat(prizes.findById(bike.getId()).orElseThrow().isClaimed()).isFalse();
+        assertThat(_find(Checkbox.class)).extracting(Checkbox::getLabel).startsWith("Book");
+        // Bike is now an "other available prize" again.
+        assertThat(_get(Details.class).getSummaryText()).isEqualTo("Other available prizes (2)");
     }
 
     @Test

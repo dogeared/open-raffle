@@ -11,7 +11,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.textfield.TextField;
 import org.junit.jupiter.api.Test;
 import org.openraffle.domain.Event;
-import org.openraffle.ui.admin.ParticipantsView;
+import org.openraffle.ui.admin.PrizesView;
 import org.openraffle.ui.events.EventsView;
 
 import java.util.Set;
@@ -180,7 +180,7 @@ class EventsViewTest extends KaribuTest {
 
         _click(_get(Button.class, spec -> spec.withText("Spring fair")));
 
-        _assertOne(ParticipantsView.class);
+        _assertOne(PrizesView.class);
         assertThat(_get(Span.class, spec -> spec.withText(spring.getName()))).isNotNull();
     }
 
@@ -193,7 +193,7 @@ class EventsViewTest extends KaribuTest {
         navigate("events");
 
         _assertNone(EventsView.class);
-        _assertOne(ParticipantsView.class);
+        _assertOne(PrizesView.class);
     }
 
     @Test
