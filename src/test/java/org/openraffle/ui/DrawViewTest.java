@@ -73,6 +73,21 @@ class DrawViewTest extends KaribuTest {
     }
 
     @Test
+    void usPhoneNumbersAreShownInTheFamiliarGroupingAndDialAsDigits() {
+        Event fair = event("Spring fair", "pat@example.com");
+        Participant bob = participant(fair, "Bob", 20, 30);
+        bob.setPhone("1-212-555-0199");
+        participants.save(bob);
+        loginAsOrganizer("pat@example.com");
+        start();
+        navigate("events/" + fair.getId() + "/draw");
+
+        lookUp("25");
+
+        assertThat(_get(Anchor.class, spec -> spec.withText("(212) 555-0199")).getHref()).isEqualTo("tel:12125550199");
+    }
+
+    @Test
     void lookingUpATicketShowsTheWinnerTheirPhoneAndRankedPicks() {
         openDraw();
 

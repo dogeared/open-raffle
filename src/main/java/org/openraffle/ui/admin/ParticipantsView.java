@@ -32,6 +32,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
+import org.openraffle.domain.PhoneNumbers;
 import org.openraffle.domain.Prize;
 import org.openraffle.domain.TicketRange;
 import org.openraffle.security.SecurityConfig;
@@ -147,7 +148,7 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
 
         TextField name = new TextField("Name");
         TextField phone = new TextField("Phone");
-        phone.setPlaceholder("555-123-4567");
+        phone.setPlaceholder("(555) 123-4567");
         phone.setHelperText("Outside the US, start with + and the country code, e.g. +44 20 7946 0958");
         phone.setMaxLength(32);
 
@@ -155,7 +156,8 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         binder.forField(name).asRequired("Name is required").bind(Participant::getName, Participant::setName);
         binder.forField(phone).asRequired("Phone is required")
                 .withValidator(Participant::isPlausiblePhone, Participant.PHONE_RULE)
-                .bind(Participant::getPhone, Participant::setPhone);
+                // Show the stored number the way it is displayed elsewhere; what is typed is saved as typed.
+                .bind(p -> PhoneNumbers.format(p.getPhone()), Participant::setPhone);
         if (!isNew) {
             binder.readBean(participant);
         }

@@ -5,6 +5,14 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-10-04
+
+### Changed
+- Phone numbers are shown as "(555) 123-4567" wherever they appear (the draw result, the
+  Reports page, the participant editor) when they are US or Canadian numbers: ten digits with
+  no country code, or led by 1 or +1. Other countries' numbers, and anything that cannot be
+  read as a North American number, are shown exactly as entered.
+
 ## [1.4.0] - 2026-10-04
 
 ### Added
