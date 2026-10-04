@@ -4,3 +4,25 @@ html {
   --lumo-primary-color-50pct: hsla(262, 60%, 48%, 0.5);
   --lumo-primary-color-10pct: hsla(262, 60%, 48%, 0.1);
 }
+
+.app-footer .footer-heart {
+  display: inline-block;
+}
+
+.app-footer:hover .footer-heart {
+  animation: footer-heart-pulse 1s ease-in-out infinite;
+}
+
+@keyframes footer-heart-pulse {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.3); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.3); }
+  60% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-footer:hover .footer-heart {
+    animation: none;
+  }
+}
