@@ -5,6 +5,19 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-10-04
+
+### Changed
+- Ticket numbers are drawn as small raffle tickets wherever a participant's tickets are
+  shown: the wishlist, the participants grid, the QR code dialog and the draw result. With
+  prefixed numbers (`12-01 – 12-04`) the dash inside a number no longer reads like the dash
+  between two numbers. Screen readers hear "12-01 to 12-04".
+- The wishlist, the QR code dialog and the draw result list the tickets one range per
+  line, so several prefixed ranges no longer wrap into a jumble. In the grid a range never
+  breaks across lines.
+- The QR code dialog speaks to the participant ("Your tickets:"), and the scan hint sits
+  above the QR code.
+
 ## [1.3.1] - 2026-10-04
 
 ### Changed
@@ -245,6 +258,7 @@ vulnerabilities (`snyk test` and `snyk code test` both report 0 issues).
 - **CI.** GitHub Actions runs the test suite on every push and pull request.
 
 [1.1.3]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.1.3
+[1.3.2]: https://github.com/dogeared/open-raffle/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/dogeared/open-raffle/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/dogeared/open-raffle/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.2.0

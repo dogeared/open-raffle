@@ -36,6 +36,11 @@ class ParticipantsViewTest extends KaribuTest {
         return _get(Grid.class);
     }
 
+    /** The tickets cell of a grid row, as shown on screen. */
+    private static String tickets(int row) {
+        return TicketRangeLabelTest.shown((TicketRangeLabel) _getCellComponent(grid(), row, "tickets"));
+    }
+
     private Event openEventAsOrganizer() {
         Event fair = event("Spring fair", "pat@example.com");
         loginAsOrganizer("pat@example.com");
@@ -65,11 +70,13 @@ class ParticipantsViewTest extends KaribuTest {
         // The editor closes and the QR dialog for the new participant opens.
         Dialog qr = _get(Dialog.class, spec -> spec.withPredicate(d -> "Ann".equals(d.getHeaderTitle())));
         assertThat(qr.isOpened()).isTrue();
+        assertThat(TicketRangeLabelTest.shown(_get(qr, TicketRangeList.class))).isEqualTo("100 – 104");
         _click(_get(Button.class, spec -> spec.withText("Close")));
         _assertNoDialogs();
 
         assertThat(_size(grid())).isEqualTo(1);
-        assertThat(_getFormattedRow(grid(), 0)).contains("100 – 104", "5").doesNotContain("+44 20 7946 0958");
+        assertThat(tickets(0)).isEqualTo("100 – 104");
+        assertThat(_getFormattedRow(grid(), 0)).contains("5").doesNotContain("+44 20 7946 0958");
         Participant ann = participants.findAll().get(0);
         assertThat(ann.getPhone()).isEqualTo("+44 20 7946 0958");
         assertThat(ann.getToken()).isNotBlank();
@@ -102,7 +109,8 @@ class ParticipantsViewTest extends KaribuTest {
         _click(_get(Button.class, spec -> spec.withText("Save")));
 
         _assertNoDialogs();
-        assertThat(_getFormattedRow(grid(), 0)).contains("1 – 10, 30 – 35", "16");
+        assertThat(tickets(0)).isEqualTo("1 – 10, 30 – 35");
+        assertThat(_getFormattedRow(grid(), 0)).contains("16");
         assertThat(participants.findByToken("token-ann").orElseThrow().holdsTicket(33)).isTrue();
     }
 
@@ -128,7 +136,8 @@ class ParticipantsViewTest extends KaribuTest {
         _click(_get(Button.class, spec -> spec.withText("Create & show QR")));
         _click(_get(Button.class, spec -> spec.withText("Close")));
 
-        assertThat(_getFormattedRow(grid(), 0)).contains("987-001 – 987-100", "100");
+        assertThat(tickets(0)).isEqualTo("987-001 – 987-100");
+        assertThat(_getFormattedRow(grid(), 0)).contains("100");
         assertThat(participants.findAll().get(0).holdsTicket("987-042")).isTrue();
         assertThat(participants.findAll().get(0).holdsTicket("988-042")).isFalse();
     }

@@ -34,6 +34,7 @@ import org.openraffle.service.EventService;
 import org.openraffle.service.ParticipantService;
 import org.openraffle.service.PrizeService;
 import org.openraffle.ui.MainLayout;
+import org.openraffle.ui.TicketRangeList;
 
 import java.util.List;
 
@@ -103,9 +104,11 @@ public class DrawView extends VerticalLayout implements BeforeEnterObserver {
 
     private void showWinner(Participant p) {
         H3 name = new H3("🎉 " + p.getName());
-        Paragraph range = new Paragraph("Holds tickets " + p.getTicketRangeLabel());
-        range.addClassNames(LumoUtility.TextColor.SECONDARY);
-        result.add(name, range);
+        Paragraph holds = new Paragraph(p.getTicketCount() == 1 ? "Holds this ticket:" : "Holds these tickets:");
+        holds.addClassNames(LumoUtility.Margin.Bottom.NONE);
+        Div tickets = new Div(holds, new TicketRangeList(p));
+        tickets.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM);
+        result.add(name, tickets);
         if (p.getPhone() != null) {
             Anchor phone = new Anchor("tel:" + p.getPhone().replaceAll("[^+\\d]", ""), p.getPhone());
             Paragraph phoneLine = new Paragraph(new Span("📞 "), phone);

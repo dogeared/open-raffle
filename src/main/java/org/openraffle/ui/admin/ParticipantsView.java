@@ -42,6 +42,8 @@ import org.openraffle.service.QrCodeService;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
 import org.openraffle.ui.ResponsiveColumns;
+import org.openraffle.ui.TicketRangeLabel;
+import org.openraffle.ui.TicketRangeList;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -82,7 +84,7 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
             return name;
         }).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         // Alphabetical, server-side (the grid only holds one page, so column sorting would mislead).
-        grid.addColumn(Participant::getTicketRangeLabel).setHeader("Tickets").setKey("tickets").setWidth("7em").setFlexGrow(2);
+        grid.addComponentColumn(TicketRangeLabel::new).setHeader("Tickets").setKey("tickets").setWidth("7em").setFlexGrow(2);
         Grid.Column<Participant> count = grid.addColumn(Participant::getTicketCount)
                 .setHeader("Count").setKey("count").setWidth("6em").setFlexGrow(0);
         // The wishlist summary opens a dialog with the full ranked list.
@@ -221,10 +223,8 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         // The last ticket defaults to the first one; select it on focus so typing replaces it.
         last.setAutoselect(true);
         if (existing != null) {
-            List<String> ends = existing.getLabel().contains(" – ")
-                    ? List.of(existing.getLabel().split(" – ")) : List.of(existing.getLabel(), existing.getLabel());
-            first.setValue(ends.get(0));
-            last.setValue(ends.get(1));
+            first.setValue(existing.getStartLabel());
+            last.setValue(existing.getEndLabel());
         }
         // Prefill in the browser at "change" time (before focus moves on) so autoselect on
         // the last-ticket field highlights the value; the server listener is the fallback.
@@ -363,15 +363,17 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         image.setWidth("min(70vw, 360px)");
         image.setHeight("min(70vw, 360px)");
 
-        Span tickets = new Span("Tickets " + participant.getTicketRangeLabel());
-        tickets.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+        // Shown to the participant, so it speaks to them.
+        Paragraph holds = new Paragraph(participant.getTicketCount() == 1 ? "Your ticket:" : "Your tickets:");
+        holds.addClassNames(LumoUtility.Margin.NONE);
+        Div tickets = new Div(holds, new TicketRangeList(participant));
         Anchor link = new Anchor(url, url);
         link.setTarget("_blank");
         link.addClassNames(LumoUtility.FontSize.SMALL);
         Paragraph hint = new Paragraph("Scan to choose the prizes you'd like if your ticket is drawn.");
         hint.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
 
-        VerticalLayout content = new VerticalLayout(tickets, image, link, hint);
+        VerticalLayout content = new VerticalLayout(tickets, hint, image, link);
         content.setAlignItems(Alignment.CENTER);
         content.setPadding(false);
         dialog.add(content);
