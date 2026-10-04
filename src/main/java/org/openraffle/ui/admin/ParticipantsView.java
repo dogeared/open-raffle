@@ -41,6 +41,7 @@ import org.openraffle.service.ParticipantService.TicketRangeConflictException;
 import org.openraffle.service.QrCodeService;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.ResponsiveColumns;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -79,12 +80,13 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
             Button name = new Button(p.getName(), e -> openEditor(p));
             name.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
             return name;
-        }).setHeader("Name").setKey("name").setAutoWidth(true);
+        }).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         // Alphabetical, server-side (the grid only holds one page, so column sorting would mislead).
-        grid.addColumn(Participant::getTicketRangeLabel).setHeader("Tickets").setKey("tickets").setAutoWidth(true);
-        grid.addColumn(Participant::getTicketCount).setHeader("Count").setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(Participant::getTicketRangeLabel).setHeader("Tickets").setKey("tickets").setWidth("7em").setFlexGrow(2);
+        Grid.Column<Participant> count = grid.addColumn(Participant::getTicketCount)
+                .setHeader("Count").setKey("count").setWidth("6em").setFlexGrow(0);
         // The wishlist summary opens a dialog with the full ranked list.
-        grid.addComponentColumn(p -> {
+        Grid.Column<Participant> wishlist = grid.addComponentColumn(p -> {
             if (p.getWishlist().isEmpty()) {
                 return new Span("—");
             }
@@ -94,7 +96,7 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
             open.setTooltipText("Show " + p.getName() + "'s picks");
             open.getStyle().set("white-space", "normal").set("text-align", "left");
             return open;
-        }).setHeader("Wishlist (in order)").setKey("wishlist").setFlexGrow(1);
+        }).setHeader("Wishlist (in order)").setKey("wishlist").setWidth("8em").setFlexGrow(3);
         grid.addComponentColumn(p -> {
             Button qr = new Button(VaadinIcon.QRCODE.create(), e -> showQr(p));
             qr.setTooltipText("Show QR code");
@@ -102,11 +104,16 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
             Button delete = new Button(VaadinIcon.TRASH.create(), e -> confirmDelete(p));
             delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
             HorizontalLayout actions = new HorizontalLayout(qr, edit, delete);
+            actions.setSpacing(false);
             actions.getChildren().forEach(c -> ((Button) c)
                     .addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL));
             return actions;
         }).setHeader("").setKey("actions").setAutoWidth(true).setFlexGrow(0);
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        // Long names, ticket lists and wishlists wrap onto more lines instead of being cut off;
+        // on a phone the count and wishlist columns give way (both are a tap away via the
+        // name and wishlist dialogs).
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
+        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(count, wishlist));
         grid.setSizeFull();
 
         add(toolbar, grid, pages);
