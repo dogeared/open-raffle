@@ -17,6 +17,8 @@ public interface PrizeRepository extends JpaRepository<Prize, Long> {
 
     List<Prize> findAllByClaimedBy(Participant participant);
 
+    List<Prize> findAllByEventAndClaimedByIsNotNullOrderByClaimedAtDesc(Event event);
+
     long countByEventIsNull();
 
     @Modifying

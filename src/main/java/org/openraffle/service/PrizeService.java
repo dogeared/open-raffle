@@ -26,6 +26,12 @@ public class PrizeService {
         return prizes.findAllByEventAlphabetically(event);
     }
 
+    /** The event's prizes that have been handed out, most recent first. */
+    @Transactional(readOnly = true)
+    public List<Prize> findClaimed(Event event) {
+        return prizes.findAllByEventAndClaimedByIsNotNullOrderByClaimedAtDesc(event);
+    }
+
     public Prize save(Prize prize) {
         if (prize.getEvent() == null) {
             throw new IllegalArgumentException("Prize must belong to an event");

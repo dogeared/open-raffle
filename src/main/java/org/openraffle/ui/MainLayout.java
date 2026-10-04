@@ -26,6 +26,7 @@ import org.openraffle.service.EventService;
 import org.openraffle.ui.admin.DrawView;
 import org.openraffle.ui.admin.ParticipantsView;
 import org.openraffle.ui.admin.PrizesView;
+import org.openraffle.ui.admin.ReportsView;
 import org.openraffle.ui.events.EventsView;
 
 import java.util.List;
@@ -83,8 +84,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         content.removeAll();
         if (newContent != null) {
             // Fill the space above the footer; min-height 0 lets a full-size view shrink to
-            // fit rather than push the footer out of view.
-            newContent.getElement().getStyle().set("flex", "1 1 auto").set("min-height", "0");
+            // fit rather than push the footer out of view, and overflow auto makes a view
+            // taller than the window scroll above the footer instead of spilling past it.
+            newContent.getElement().getStyle().set("flex", "1 1 auto").set("min-height", "0").set("overflow", "auto");
             content.getElement().appendChild(newContent.getElement());
         }
         content.add(footer);
@@ -116,6 +118,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
             // Set up prizes first, then sell tickets, then draw.
             section.addItem(new SideNavItem("Prizes", PrizesView.class, params, VaadinIcon.GIFT.create()));
             section.addItem(new SideNavItem("Participants", ParticipantsView.class, params, VaadinIcon.USERS.create()));
+            section.addItem(new SideNavItem("Reports", ReportsView.class, params, VaadinIcon.CLIPBOARD_TEXT.create()));
             section.addItem(new SideNavItem("Draw", DrawView.class, params, VaadinIcon.TROPHY.create()));
             section.setExpanded(true);
             nav.addItem(section);

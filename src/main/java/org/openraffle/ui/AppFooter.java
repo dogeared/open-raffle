@@ -17,7 +17,7 @@ public class AppFooter extends Footer {
         addClassName("app-footer");
         addClassNames(LumoUtility.Display.FLEX, LumoUtility.JustifyContent.CENTER, LumoUtility.Gap.XSMALL,
                 LumoUtility.FontSize.SMALL, LumoUtility.TextColor.TERTIARY, LumoUtility.Padding.MEDIUM,
-                LumoUtility.Margin.Top.AUTO);
+                LumoUtility.Margin.Top.AUTO, LumoUtility.BoxSizing.BORDER);
         setWidthFull();
     }
 }

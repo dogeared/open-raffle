@@ -5,6 +5,23 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-10-04
+
+### Added
+- **Reports.** A new Reports page, between Participants and Draw in the event menu, lists
+  every prize that has been claimed: the prize, who took it, their tickets and phone, and
+  when. Most recent claim first, paginated like the other grids (10 per page, up to 100).
+
+### Changed
+- The prizes grid no longer has a Status column; who took what lives on the Reports page,
+  which frees room for prize names and descriptions.
+
+### Fixed
+- On the draw page, a lookup result taller than the window pushed the footer into the
+  middle of the content (or beside it) instead of staying at the bottom. The result now
+  scrolls above the footer.
+- The footer was wider than a phone screen by its own padding.
+
 ## [1.3.2] - 2026-10-04
 
 ### Changed

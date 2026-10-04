@@ -8,7 +8,6 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -66,14 +65,6 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         Grid.Column<Prize> description = grid.addColumn(Prize::getDescription)
                 .setHeader("Description").setKey("description").setWidth("8em").setFlexGrow(3);
-        grid.addComponentColumn(prize -> {
-            if (!prize.isClaimed()) {
-                return new Span();
-            }
-            Span claimed = new Span("Claimed by " + prize.getClaimedBy().getName());
-            claimed.getElement().getThemeList().add("badge success");
-            return claimed;
-        }).setHeader("Status").setKey("status").setWidth("5.5em").setFlexGrow(1);
         grid.addComponentColumn(prize -> {
             Button edit = new Button(VaadinIcon.EDIT.create(), e -> openEditor(prize));
             edit.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
