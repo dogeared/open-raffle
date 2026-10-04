@@ -10,9 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
+import org.openraffle.domain.TicketRange;
 import org.openraffle.ui.participant.WishlistView;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -87,6 +89,19 @@ class WishlistViewTest extends KaribuTest {
 
         assertThat(participants.findByToken(ann.getToken()).orElseThrow().getWishlist()).hasSize(1);
         assertThat(savedLabel()).startsWith("Saved ");
+    }
+
+    @Test
+    void ticketsAreListedOneRangePerLine() {
+        openWishlist();
+        assertThat(TicketRangeLabelTest.shown(_get(TicketRangeList.class))).isEqualTo("1 – 10");
+
+        ann.setRanges(new ArrayList<>(List.of(TicketRange.of("987-001", "987-010"), TicketRange.of("12-05", "12-05"))));
+        participants.save(ann);
+        navigate("p/" + ann.getToken());
+
+        assertThat(TicketRangeLabelTest.numbers(_get(TicketRangeList.class)))
+                .containsExactly("12-05", "987-001", "987-010");
     }
 
     @Test

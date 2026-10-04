@@ -65,3 +65,55 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
     animation: none;
   }
 }
+
+/* A printed ticket number (TicketRangeLabel), drawn as a little raffle ticket: notched
+   ends and a perforated stub, so the dash in a prefix like 987-001 can't be mistaken for
+   the dash between two numbers. */
+.ticket-number {
+  /* light: 7.6:1 text on tint; dark: 6.1:1, and the tint still stands off the dark page */
+  --ticket-tint: light-dark(hsla(262, 60%, 48%, 0.16), hsla(262, 80%, 70%, 0.28));
+  --ticket-notch: 0.3em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  font-weight: normal; /* stays light inside bold text */
+  color: light-dark(hsl(262, 60%, 38%), hsl(262, 80%, 90%));
+  padding: 0.05em 0.55em 0.05em 0.75em;
+  margin-inline-end: 0.1em; /* room before trailing punctuation, e.g. "001-010." */
+  white-space: nowrap;
+  /* perforation: a dotted line a short stub in from the left edge */
+  background:
+    linear-gradient(to bottom, hsla(262, 60%, 48%, 0.28) 50%, transparent 0) 0.37em 0 / 1px 4px repeat-y,
+    var(--ticket-tint);
+  /* notches: a half-circle bitten out of each end */
+  -webkit-mask:
+    radial-gradient(circle at left center, transparent var(--ticket-notch), #000 calc(var(--ticket-notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--ticket-notch), #000 calc(var(--ticket-notch) + 0.5px)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at left center, transparent var(--ticket-notch), #000 calc(var(--ticket-notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at right center, transparent var(--ticket-notch), #000 calc(var(--ticket-notch) + 0.5px)) right / 51% 100% no-repeat;
+  border-radius: 2px;
+}
+
+/* High-contrast modes drop backgrounds, and with them the ticket's outline: draw a border instead. */
+@media (forced-colors: active) {
+  .ticket-number {
+    -webkit-mask: none;
+    mask: none;
+    border: 1px solid CanvasText;
+  }
+}
+
+/* One range ("987-001 – 987-100") never wraps at its own dash. */
+.ticket-range {
+  white-space: nowrap;
+}
+
+/* Several ranges (TicketRangeList): one per line, close together. */
+.ticket-range-list {
+  margin: var(--lumo-space-xs) 0;
+  padding-inline-start: 1.25em;
+}
+
+.ticket-range-list li + li {
+  margin-top: var(--lumo-space-xs);
+}

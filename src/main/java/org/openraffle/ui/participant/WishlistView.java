@@ -29,6 +29,7 @@ import org.openraffle.service.ParticipantService;
 import org.openraffle.service.PrizeService;
 import org.openraffle.ui.AppFooter;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.TicketRangeList;
 import org.openraffle.ui.AppVersion;
 
 import java.time.Instant;
@@ -125,9 +126,12 @@ public class WishlistView extends VerticalLayout implements BeforeEnterObserver 
         Span eventName = new Span(participant.getEvent().getName());
         eventName.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.TERTIARY,
                 LumoUtility.TextTransform.UPPERCASE, LumoUtility.FontWeight.SEMIBOLD);
-        Paragraph intro = new Paragraph("You hold ticket"
-                + (participant.getTicketCount() == 1 ? " " : "s ") + participant.getTicketRangeLabel()
-                + ". Pick the prizes you'd like if one of your tickets is drawn, most wanted first.");
+        // Tickets are listed one range per line: prefixed ranges in a sentence wrap into a mess.
+        Paragraph youHold = new Paragraph(participant.getTicketCount() == 1
+                ? "You hold this ticket:" : "You hold these tickets:");
+        youHold.addClassNames(LumoUtility.Margin.Bottom.NONE);
+        Div intro = new Div(youHold, new TicketRangeList(participant),
+                new Paragraph("Pick the prizes you'd like if one of your tickets is drawn, most wanted first."));
         intro.addClassNames(LumoUtility.TextColor.SECONDARY);
 
         picksList.addClassNames(LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);

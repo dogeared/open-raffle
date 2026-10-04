@@ -25,6 +25,9 @@ class TicketRangeTest {
         assertThat(TicketRange.of("987-001", "987-100").getLabel()).isEqualTo("987-001 – 987-100");
         assertThat(TicketRange.of("4563-100-300", "4563-100-1000").getLabel()).isEqualTo("4563-100-300 – 4563-100-1000");
         assertThat(TicketRange.of("5", "5").getLabel()).isEqualTo("5");
+        assertThat(TicketRange.of("987-001", "987-100").getStartLabel()).isEqualTo("987-001");
+        assertThat(TicketRange.of("987-001", "987-100").getEndLabel()).isEqualTo("987-100");
+        assertThat(TicketRange.of("5", "5").isSingle()).isTrue();
         assertThat(TicketRange.of("987-001", "987-100").getCount()).isEqualTo(100);
     }
 

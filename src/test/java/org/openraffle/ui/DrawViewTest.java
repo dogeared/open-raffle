@@ -97,8 +97,9 @@ class DrawViewTest extends KaribuTest {
 
         assertThat(_get(H3.class).getText()).contains("Bob");
         assertThat(_get(com.vaadin.flow.component.html.Paragraph.class,
-                spec -> spec.withPredicate(p -> p.getText().startsWith("Holds tickets"))).getText())
-                .isEqualTo("Holds tickets 11 – 20, 40 – 45");
+                spec -> spec.withText("Holds these tickets:"))).isNotNull();
+        assertThat(_get(TicketRangeList.class).getChildren().map(TicketRangeLabelTest::shown))
+                .containsExactly("11 – 20", "40 – 45");
     }
 
     @Test
@@ -113,8 +114,9 @@ class DrawViewTest extends KaribuTest {
         lookUp("987-042");
         assertThat(_get(H3.class).getText()).contains("Nigel");
         assertThat(_get(com.vaadin.flow.component.html.Paragraph.class,
-                spec -> spec.withPredicate(p -> p.getText().startsWith("Holds tickets"))).getText())
-                .isEqualTo("Holds tickets 987-001 – 987-100");
+                spec -> spec.withText("Holds these tickets:"))).isNotNull();
+        assertThat(_get(TicketRangeList.class).getChildren().map(TicketRangeLabelTest::shown))
+                .containsExactly("987-001 – 987-100");
 
         lookUp("988-042");
         assertThat(_get(Span.class, spec -> spec.withPredicate(s -> s.getText().startsWith("No participant"))).getText())

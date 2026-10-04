@@ -134,7 +134,22 @@ public class TicketRange {
     }
 
     public String getLabel() {
-        return start == end ? format(start) : format(start) + " – " + format(end);
+        return isSingle() ? getStartLabel() : getStartLabel() + " – " + getEndLabel();
+    }
+
+    /** The first ticket as printed, e.g. "987-001". */
+    public String getStartLabel() {
+        return format(start);
+    }
+
+    /** The last ticket as printed, e.g. "987-100". */
+    public String getEndLabel() {
+        return format(end);
+    }
+
+    /** A range of exactly one ticket. */
+    public boolean isSingle() {
+        return start == end;
     }
 
     private String format(long n) {
