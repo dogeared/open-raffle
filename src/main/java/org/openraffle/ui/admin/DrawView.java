@@ -27,6 +27,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
+import org.openraffle.domain.PhoneNumbers;
 import org.openraffle.domain.Prize;
 import org.openraffle.domain.TicketRange;
 import org.openraffle.security.SecurityConfig;
@@ -110,7 +111,7 @@ public class DrawView extends VerticalLayout implements BeforeEnterObserver {
         tickets.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM);
         result.add(name, tickets);
         if (p.getPhone() != null) {
-            Anchor phone = new Anchor("tel:" + p.getPhone().replaceAll("[^+\\d]", ""), p.getPhone());
+            Anchor phone = new Anchor("tel:" + PhoneNumbers.dialable(p.getPhone()), PhoneNumbers.format(p.getPhone()));
             Paragraph phoneLine = new Paragraph(new Span("📞 "), phone);
             result.add(phoneLine);
         }

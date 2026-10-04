@@ -13,6 +13,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import org.openraffle.domain.Event;
+import org.openraffle.domain.PhoneNumbers;
 import org.openraffle.domain.Prize;
 import org.openraffle.security.SecurityConfig;
 import org.openraffle.service.EventService;
@@ -52,7 +53,7 @@ public class ReportsView extends VerticalLayout implements BeforeEnterObserver {
         grid.addColumn(Prize::getName).setHeader("Prize").setKey("prize").setWidth("8em").setFlexGrow(3);
         grid.addColumn(p -> p.getClaimedBy().getName()).setHeader("Claimed by").setKey("claimedBy").setWidth("7em").setFlexGrow(2);
         grid.addColumn(p -> p.getClaimedBy().getTicketRangeLabel()).setHeader("Tickets").setKey("tickets").setWidth("7em").setFlexGrow(2);
-        grid.addColumn(p -> p.getClaimedBy().getPhone() == null ? "—" : p.getClaimedBy().getPhone())
+        grid.addColumn(p -> p.getClaimedBy().getPhone() == null ? "—" : PhoneNumbers.format(p.getClaimedBy().getPhone()))
                 .setHeader("Phone").setKey("phone").setWidth("7em").setFlexGrow(1);
         grid.addColumn(p -> p.getClaimedAt() == null ? "" : WHEN.format(p.getClaimedAt()))
                 .setHeader("When").setKey("when").setWidth("7em").setFlexGrow(1);
