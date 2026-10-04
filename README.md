@@ -38,7 +38,7 @@ Two Keycloak realm roles control access:
 
 | Role | Can |
 | --- | --- |
-| `ORGANIZER` | Open the events they are listed on and run them: participants, prizes, draw |
+| `ORGANIZER` | Open the events they are listed on and run them: prizes, participants, reports, draw |
 | `ADMIN` | Everything an organizer can, on every event, plus create, edit, delete and reinstate events and assign organizers |
 
 The public landing page at `/` needs no login; after logging in, organizers pick an event

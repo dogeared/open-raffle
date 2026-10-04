@@ -24,7 +24,7 @@ class MainLayoutTest extends KaribuTest {
 
         navigate("events/" + fair.getId());
         assertThat(_find(SideNavItem.class)).extracting(SideNavItem::getLabel)
-                .containsExactly("Events", "Spring fair", "Prizes", "Participants", "Draw");
+                .containsExactly("Events", "Spring fair", "Prizes", "Participants", "Reports", "Draw");
         _assertOne(Button.class, spec -> spec.withText("Log out"));
         assertThat(_get(AppFooter.class).getElement().getTextRecursively()).contains("version");
     }

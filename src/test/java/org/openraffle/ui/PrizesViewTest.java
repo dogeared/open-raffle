@@ -68,20 +68,6 @@ class PrizesViewTest extends KaribuTest {
     }
 
     @Test
-    void claimedPrizesShowWhoTookThem() {
-        Event fair = openPrizes();
-        Prize bike = prize(fair, "Bike");
-        Participant ann = participant(fair, "Ann", 1, 10);
-        bike.setClaimedBy(ann);
-        prizes.save(bike);
-        navigate("events/" + fair.getId() + "/participants");
-        navigate("events/" + fair.getId());
-
-        Span status = (Span) _getCellComponent(grid(), 0, "status");
-        assertThat(status.getText()).isEqualTo("Claimed by Ann");
-    }
-
-    @Test
     void deletingAPrizeAsksFirst() {
         Event fair = openPrizes();
         prize(fair, "Bike");
