@@ -11,7 +11,10 @@ public class AppFooter extends Footer {
     public AppFooter(AppVersion version) {
         Anchor author = new Anchor("https://github.com/dogeared", "dogeared");
         author.setTarget("_blank");
-        add(new Span("made with ❤️ by "), author, new Span(" · version " + version.get()));
+        Span heart = new Span("❤️");
+        heart.addClassName("footer-heart");
+        add(new Span("made with"), heart, new Span("by"), author, new Span(" · version " + version.get()));
+        addClassName("app-footer");
         addClassNames(LumoUtility.Display.FLEX, LumoUtility.JustifyContent.CENTER, LumoUtility.Gap.XSMALL,
                 LumoUtility.FontSize.SMALL, LumoUtility.TextColor.TERTIARY, LumoUtility.Padding.MEDIUM,
                 LumoUtility.Margin.Top.AUTO);
