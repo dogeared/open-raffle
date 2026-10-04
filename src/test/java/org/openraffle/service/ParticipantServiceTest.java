@@ -286,6 +286,23 @@ class ParticipantServiceTest {
     }
 
     @Test
+    void organizersCanTakeAPrizeOffAListAndItReleasesTheirClaim() {
+        Participant ann = participantService.save(participant("Ann", 1, 10));
+        Prize bike = prizeService.save(prize("Bike"));
+        Prize mug = prizeService.save(prize("Mug"));
+        participantService.updateWishlist(ann.getToken(), List.of(bike, mug));
+        prizeService.claim(bike, ann);
+
+        participantService.removeFromWishlist(ann, bike);
+        em.flush();
+        em.clear();
+
+        Participant reloaded = participants.findByToken(ann.getToken()).orElseThrow();
+        assertThat(reloaded.getWishlist()).extracting(Prize::getName).containsExactly("Mug");
+        assertThat(prizes.findById(bike.getId()).orElseThrow().isClaimed()).isFalse();
+    }
+
+    @Test
     void deletingAParticipantReleasesTheirClaims() {
         Participant ann = participantService.save(participant("Ann", 1, 10));
         Prize bike = prizeService.save(prize("Bike"));

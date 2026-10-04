@@ -142,6 +142,22 @@ public class ParticipantService {
         return p;
     }
 
+    /**
+     * Takes a prize off a participant's list at an organizer's request. If the participant
+     * had claimed that prize during the draw, the claim is released too.
+     */
+    public Participant removeFromWishlist(Participant participant, Prize prize) {
+        Participant p = participants.findById(participant.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Unknown participant"));
+        p.getWishlist().remove(prize);
+        prizes.findById(prize.getId()).filter(current -> current.isClaimedBy(p)).ifPresent(current -> {
+            current.setClaimedBy(null);
+            current.setClaimedAt(null);
+            prizes.save(current);
+        });
+        return participants.save(p);
+    }
+
     private static String newToken() {
         byte[] bytes = new byte[24];
         RANDOM.nextBytes(bytes);

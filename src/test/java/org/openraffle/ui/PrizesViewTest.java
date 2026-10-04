@@ -37,7 +37,7 @@ class PrizesViewTest extends KaribuTest {
         Event fair = event("Spring fair", "pat@example.com");
         loginAsOrganizer("pat@example.com");
         start();
-        navigate("events/" + fair.getId() + "/prizes");
+        navigate("events/" + fair.getId());
         _assertOne(PrizesView.class);
         return fair;
     }
@@ -46,8 +46,8 @@ class PrizesViewTest extends KaribuTest {
     void prizesAreAddedEditedAndListedAlphabetically() {
         Event fair = openPrizes();
         prize(fair, "mug");
+        navigate("events/" + fair.getId() + "/participants");
         navigate("events/" + fair.getId());
-        navigate("events/" + fair.getId() + "/prizes");
 
         _click(_get(Button.class, spec -> spec.withText("Add prize")));
         _setValue(_get(TextField.class, spec -> spec.withLabel("Name")), "Bike");
@@ -74,8 +74,8 @@ class PrizesViewTest extends KaribuTest {
         Participant ann = participant(fair, "Ann", 1, 10);
         bike.setClaimedBy(ann);
         prizes.save(bike);
+        navigate("events/" + fair.getId() + "/participants");
         navigate("events/" + fair.getId());
-        navigate("events/" + fair.getId() + "/prizes");
 
         Span status = (Span) _getCellComponent(grid(), 0, "status");
         assertThat(status.getText()).isEqualTo("Claimed by Ann");
@@ -85,8 +85,8 @@ class PrizesViewTest extends KaribuTest {
     void deletingAPrizeAsksFirst() {
         Event fair = openPrizes();
         prize(fair, "Bike");
+        navigate("events/" + fair.getId() + "/participants");
         navigate("events/" + fair.getId());
-        navigate("events/" + fair.getId() + "/prizes");
 
         HorizontalLayout actions = (HorizontalLayout) _getCellComponent(grid(), 0, "actions");
         _click((Button) actions.getComponentAt(1));
@@ -101,8 +101,8 @@ class PrizesViewTest extends KaribuTest {
     void longListsArePaginatedTenAtATimeWithAChooser() {
         Event fair = openPrizes();
         IntStream.rangeClosed(1, 14).forEach(i -> prize(fair, String.format("Prize %02d", i)));
+        navigate("events/" + fair.getId() + "/participants");
         navigate("events/" + fair.getId());
-        navigate("events/" + fair.getId() + "/prizes");
 
         assertThat(_size(grid())).isEqualTo(10);
         assertThat(_getFormattedRow(grid(), 9)).startsWith("10", "Prize 10");

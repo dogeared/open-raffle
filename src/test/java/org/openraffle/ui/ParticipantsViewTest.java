@@ -40,7 +40,7 @@ class ParticipantsViewTest extends KaribuTest {
         Event fair = event("Spring fair", "pat@example.com");
         loginAsOrganizer("pat@example.com");
         start();
-        navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
         _assertOne(ParticipantsView.class);
         return fair;
     }
@@ -80,8 +80,8 @@ class ParticipantsViewTest extends KaribuTest {
         Event fair = openEventAsOrganizer();
         participant(fair, "Ann", 1, 10);
         participant(fair, "Bob", 11, 20);
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _click((Button) _getCellComponent(grid(), 0, "name"));
         assertThat(_find(TextField.class, spec -> spec.withLabel("First ticket #"))).hasSize(1);
@@ -139,8 +139,8 @@ class ParticipantsViewTest extends KaribuTest {
         Participant ann = participant(fair, "Ann", 1, 10);
         ann.addRange(30, 35);
         participants.save(ann);
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _click((Button) _getCellComponent(grid(), 0, "name"));
         List<Button> removes = _find(Button.class, spec -> spec.withPredicate(b -> "Remove range".equals(b.getAriaLabel().orElse(""))));
@@ -159,8 +159,8 @@ class ParticipantsViewTest extends KaribuTest {
     void overlappingTicketsAreReportedNotSaved() {
         Event fair = openEventAsOrganizer();
         participant(fair, "Ann", 1, 10);
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _click(_get(Button.class, spec -> spec.withText("Add participant")));
         _setValue(_get(TextField.class, spec -> spec.withLabel("Name")), "Bob");
@@ -184,8 +184,8 @@ class ParticipantsViewTest extends KaribuTest {
         Participant ann = participant(fair, "Ann", 1, 10);
         ann.setWishlist(List.of(book, bike));
         participants.save(ann);
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _click((Button) _getCellComponent(grid(), 0, "name"));
         Dialog editor = _get(Dialog.class);
@@ -201,14 +201,22 @@ class ParticipantsViewTest extends KaribuTest {
         assertThat(picks.getHeaderTitle()).isEqualTo("Ann's picks");
         assertThat(_find(ListItem.class)).extracting(li -> li.getElement().getTextRecursively())
                 .containsExactly("Book", "Bike");
+
+        // Organizers can take a prize off the list from here.
+        _click(_get(Button.class, spec -> spec.withPredicate(b -> "Remove Book from the list".equals(b.getAriaLabel().orElse("")))));
+
+        assertThat(participants.findByToken("token-ann").orElseThrow().getWishlist()).extracting(Prize::getName).containsExactly("Bike");
+        assertThat(_get(Dialog.class).getHeaderTitle()).isEqualTo("Ann's picks"); // reopened with the rest
+        assertThat(_find(ListItem.class)).extracting(li -> li.getElement().getTextRecursively()).containsExactly("Bike");
+        assertThat(((Button) _getCellComponent(grid(), 0, "wishlist")).getText()).isEqualTo("Bike");
     }
 
     @Test
     void deletingAParticipantAsksFirst() {
         Event fair = openEventAsOrganizer();
         participant(fair, "Ann", 1, 10);
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         HorizontalLayout actions = (HorizontalLayout) _getCellComponent(grid(), 0, "actions");
         _click((Button) actions.getComponentAt(2));
@@ -226,8 +234,8 @@ class ParticipantsViewTest extends KaribuTest {
             // Names in reverse order of their tickets, to prove the sort is by name.
             participant(fair, "Person " + (char) ('Z' - i), i * 10, i * 10 + 5);
         }
-        navigate("events/" + fair.getId() + "/prizes");
         navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         assertThat(_size(grid())).isEqualTo(10);
         assertThat(((Button) _getCellComponent(grid(), 0, "name")).getText()).isEqualTo("Person N");
@@ -247,7 +255,7 @@ class ParticipantsViewTest extends KaribuTest {
         loginAsOrganizer("pat@example.com");
         start();
 
-        navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _assertNone(ParticipantsView.class);
         _assertOne(EventsView.class);
@@ -260,7 +268,7 @@ class ParticipantsViewTest extends KaribuTest {
         loginAsAdmin();
         start();
 
-        navigate("events/" + fair.getId());
+        navigate("events/" + fair.getId() + "/participants");
 
         _assertOne(ParticipantsView.class);
     }

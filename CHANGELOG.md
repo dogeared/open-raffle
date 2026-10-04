@@ -5,6 +5,19 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-04
+
+### Added
+- Organizers and admins can take a prize off a participant's list: from the picks dialog on
+  the participants page, and from the winner's list on the draw page. Removing a prize the
+  participant had claimed releases the claim too.
+
+### Changed
+- Opening an event lands on **Prizes** (`/events/{id}`); participants moved to
+  `/events/{id}/participants`.
+- The wishlist column on the participants page stays on one line with an ellipsis, on every
+  screen size — the full list is in the dialog, and organizers work on laptops and tablets.
+
 ## [1.1.3] - 2026-10-04
 
 ### Changed
@@ -226,6 +239,7 @@ vulnerabilities (`snyk test` and `snyk code test` both report 0 issues).
 - **CI.** GitHub Actions runs the test suite on every push and pull request.
 
 [1.1.3]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.1.3
+[1.3.0]: https://github.com/dogeared/open-raffle/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/dogeared/open-raffle/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/dogeared/open-raffle/compare/v1.1.0...v1.1.1

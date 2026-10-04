@@ -31,3 +31,16 @@ vaadin-grid-cell-content vaadin-button::part(label) {
     padding-inline: var(--lumo-space-s);
   }
 }
+
+/* The wishlist summary in the participants grid stays on one line with an ellipsis. */
+vaadin-grid-cell-content vaadin-button.wishlist-summary,
+vaadin-grid-cell-content vaadin-button.wishlist-summary::part(label) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+vaadin-grid-cell-content vaadin-button.wishlist-summary {
+  display: block;
+  max-width: 100%;
+  min-height: var(--lumo-size-s);
+}
