@@ -5,6 +5,14 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-10-04
+
+### Changed
+- The Reports page sorts by who took the prize, A to Z, when it opens. The Prize and
+  Claimed by column headers switch between ascending and descending, and the order applies
+  to the whole report, not just the page on screen. The other column breaks ties, then the
+  most recent claim.
+
 ## [1.4.1] - 2026-10-04
 
 ### Changed
