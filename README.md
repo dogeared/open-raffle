@@ -153,6 +153,12 @@ working example; in an existing realm you need:
   token and the userinfo response.
 - Organizers are matched to events by the **email** of their Keycloak account, so give
   each organizer user an email.
+- If the Keycloak instance serves **more than one hostname** (several apps, several
+  realms), pin this realm to the hostname the app uses: **Realm settings → General →
+  Frontend URL** → e.g. `https://auth.example.com`. Without it the token issuer follows
+  whatever host a request arrived on, and a backchannel request that reaches Keycloak
+  under another name produces a token the app rejects — which shows up as a login
+  redirect loop.
 
 **Optional: the Open Raffle login theme.** `keycloak/themes/open-raffle` restyles Keycloak's
 login pages to match the app (see [Keycloak login theme](#keycloak-login-theme)).
