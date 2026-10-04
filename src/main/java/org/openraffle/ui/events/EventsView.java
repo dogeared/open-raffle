@@ -32,6 +32,7 @@ import org.openraffle.security.SecurityConfig;
 import org.openraffle.service.EventService;
 import org.openraffle.service.OrganizerDirectory;
 import org.openraffle.ui.MainLayout;
+import org.openraffle.ui.ResponsiveColumns;
 import org.openraffle.ui.admin.ParticipantsView;
 
 import java.util.ArrayList;
@@ -118,14 +119,14 @@ public class EventsView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     private void buildAdminGrid() {
-        grid.addColumn(Event::getName).setHeader("Name").setKey("name").setAutoWidth(true).setSortable(true);
+        grid.addColumn(Event::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2).setSortable(true);
         grid.addComponentColumn(e -> {
             Span badge = new Span(e.isDeleted() ? "Deleted" : "Active");
             badge.getElement().getThemeList().add(e.isDeleted() ? "badge error" : "badge success");
             return badge;
-        }).setHeader("Status").setKey("status").setAutoWidth(true).setFlexGrow(0);
+        }).setHeader("Status").setKey("status").setWidth("5.5em").setFlexGrow(0);
         // Names for organizers who have logged in; plain emails for the rest.
-        grid.addColumn(e -> {
+        Grid.Column<Event> organizers = grid.addColumn(e -> {
             if (e.getOrganizerEmails().isEmpty()) {
                 return "—";
             }
@@ -133,7 +134,7 @@ public class EventsView extends VerticalLayout implements BeforeEnterObserver {
             return e.getOrganizerEmails().stream()
                     .map(email -> known.containsKey(email) ? known.get(email).getName() : email)
                     .collect(Collectors.joining(", "));
-        }).setHeader("Organizers").setKey("organizers").setFlexGrow(1);
+        }).setHeader("Organizers").setKey("organizers").setWidth("8em").setFlexGrow(3);
         grid.addComponentColumn(e -> {
             Button open = new Button("Open", VaadinIcon.ARROW_RIGHT.create(), click -> open(e));
             open.setIconAfterText(true);
@@ -148,11 +149,13 @@ public class EventsView extends VerticalLayout implements BeforeEnterObserver {
                 toggle.addThemeVariants(ButtonVariant.LUMO_ERROR);
             }
             HorizontalLayout actions = new HorizontalLayout(open, edit, toggle);
+            actions.setSpacing(false);
             actions.getChildren().forEach(c -> ((Button) c)
                     .addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL));
             return actions;
         }).setHeader("").setKey("actions").setAutoWidth(true).setFlexGrow(0);
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
+        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(organizers));
         grid.setSizeFull();
     }
 

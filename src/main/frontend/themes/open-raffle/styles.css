@@ -4,3 +4,30 @@ html {
   --lumo-primary-color-50pct: hsla(262, 60%, 48%, 0.5);
   --lumo-primary-color-10pct: hsla(262, 60%, 48%, 0.1);
 }
+
+/* Grid cells wrap long values (names, ticket lists, wishlists) rather than truncating
+   them; break-word only splits a word that cannot fit on a line by itself. */
+vaadin-grid-cell-content {
+  overflow-wrap: break-word;
+}
+
+/* Link-style buttons inside grid cells (participant names, wishlist summaries) wrap too. */
+vaadin-grid-cell-content vaadin-button {
+  height: auto;
+  min-height: var(--lumo-size-s);
+  white-space: normal;
+  text-align: left;
+}
+vaadin-grid-cell-content vaadin-button::part(label) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: var(--lumo-line-height-s);
+}
+
+/* On phones, tighter cell padding so the remaining columns fit without a sideways scroll. */
+@media (max-width: 640px) {
+  vaadin-grid-cell-content {
+    padding-inline: var(--lumo-space-s);
+  }
+}

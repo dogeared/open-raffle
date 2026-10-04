@@ -5,6 +5,24 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-10-04
+
+### Changed
+- **Grids on phones.** Long values in the participants, prizes and events grids wrap onto
+  more lines instead of being cut off with "…", and on narrow screens the lower-priority
+  columns (participant count and wishlist, prize description, event organizers) give way so
+  the rest fits the width without a sideways scroll. Those details remain a tap away in the
+  editor and wishlist dialogs.
+
+## [1.2.0] - 2026-10-04
+
+### Changed
+- **Grids on phones.** Cells wrap long values (names, ticket lists, wishlists, organizer
+  lists) instead of truncating them, and on screens narrower than 640px the lower-priority
+  columns (participant count and wishlist, prize description, event organizers) are hidden
+  so the rest fits without sideways scrolling. The hidden details remain a tap away in the
+  name, wishlist and edit dialogs; wider screens still show every column.
+
 ## [1.1.2] - 2026-10-02
 
 ### Fixed
@@ -207,6 +225,8 @@ vulnerabilities (`snyk test` and `snyk code test` both report 0 issues).
   provides Postgres for local development.
 - **CI.** GitHub Actions runs the test suite on every push and pull request.
 
+[1.1.3]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.1.3
+[1.2.0]: https://github.com/dogeared/open-raffle/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/dogeared/open-raffle/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/dogeared/open-raffle/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/dogeared/open-raffle/compare/v1.0.1...v1.1.0

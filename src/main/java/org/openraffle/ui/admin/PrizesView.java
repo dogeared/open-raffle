@@ -29,6 +29,7 @@ import org.openraffle.service.EventService;
 import org.openraffle.service.PrizeService;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.ResponsiveColumns;
 
 import java.util.List;
 
@@ -61,9 +62,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         // number is for readability only and keeps counting across pages. Fixed width: an
         // auto-sized column measured while the grid was collapsed once truncated it to "1…".
         grid.addColumn(prize -> pages.getPage() * pages.getPageSize() + currentPage.indexOf(prize) + 1)
-                .setHeader("#").setKey("number").setWidth("4.5em").setFlexGrow(0);
-        grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setAutoWidth(true);
-        grid.addColumn(Prize::getDescription).setHeader("Description").setFlexGrow(1);
+                .setHeader("#").setKey("number").setWidth("4em").setFlexGrow(0);
+        grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
+        Grid.Column<Prize> description = grid.addColumn(Prize::getDescription)
+                .setHeader("Description").setKey("description").setWidth("8em").setFlexGrow(3);
         grid.addComponentColumn(prize -> {
             if (!prize.isClaimed()) {
                 return new Span();
@@ -71,15 +73,18 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
             Span claimed = new Span("Claimed by " + prize.getClaimedBy().getName());
             claimed.getElement().getThemeList().add("badge success");
             return claimed;
-        }).setHeader("Status").setKey("status").setAutoWidth(true).setFlexGrow(0);
+        }).setHeader("Status").setKey("status").setWidth("5.5em").setFlexGrow(1);
         grid.addComponentColumn(prize -> {
             Button edit = new Button(VaadinIcon.EDIT.create(), e -> openEditor(prize));
             edit.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
             Button delete = new Button(VaadinIcon.TRASH.create(), e -> confirmDelete(prize));
             delete.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-            return new HorizontalLayout(edit, delete);
+            HorizontalLayout actions = new HorizontalLayout(edit, delete);
+            actions.setSpacing(false);
+            return actions;
         }).setHeader("").setKey("actions").setAutoWidth(true).setFlexGrow(0);
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
+        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(description));
         grid.setSizeFull();
 
         add(toolbar, grid, pages);
