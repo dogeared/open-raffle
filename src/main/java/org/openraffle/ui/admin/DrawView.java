@@ -73,7 +73,9 @@ public class DrawView extends VerticalLayout implements BeforeEnterObserver {
         lookup.addClickShortcut(Key.ENTER).listenOn(ticket);
 
         HorizontalLayout form = new HorizontalLayout(ticket, lookup);
-        form.setAlignItems(Alignment.END);
+        // Baseline keeps the button level with the input box; "end" would drop it down
+        // beside the helper text under the field.
+        form.setAlignItems(Alignment.BASELINE);
 
         add(new H2("Draw a winner"), form, result);
     }
