@@ -12,6 +12,8 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.openraffle.bgg.FakeBgg;
+import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Organizer;
 import org.openraffle.domain.Participant;
@@ -60,9 +62,10 @@ import java.util.Set;
         // start-up; a stub registration below stands in for it.
         "spring.autoconfigure.exclude=org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration,org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration",
         "vaadin.launch-browser=false",
+        "raffle.images-dir=target/test-images",
 })
 @AutoConfigureTestDatabase
-@Import(KaribuTest.StubOidcClient.class)
+@Import({KaribuTest.StubOidcClient.class, FakeBgg.class})
 public abstract class KaribuTest {
 
     @TestConfiguration
@@ -104,8 +107,15 @@ public abstract class KaribuTest {
 
     private boolean started;
 
+    @Autowired
+    FakeBggClient fakeBgg;
+
     @BeforeEach
     void cleanSlate() {
+        fakeBgg.enabled = true;
+        fakeBgg.imagesAvailable = true;
+        fakeBgg.downloads.clear();
+        fakeBgg.searches.clear();
         wipeDatabase();
         SecurityContextHolder.clearContext();
     }

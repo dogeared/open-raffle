@@ -6,6 +6,7 @@ import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -45,7 +46,9 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // The hosting platform's health check must not be bounced to the login page.
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(EndpointRequest.to(HealthEndpoint.class, InfoEndpoint.class)).permitAll());
+                .requestMatchers(EndpointRequest.to(HealthEndpoint.class, InfoEndpoint.class)).permitAll()
+                // Prize pictures appear on the public prize list and participants' wishlists.
+                .requestMatchers(HttpMethod.GET, "/images/*").permitAll());
         // Vaadin's defaults (static resources, CSRF, navigation access control), plus:
         // redirect unauthenticated users straight to Keycloak; after logout, send them
         // through Keycloak's end-session endpoint and back to the app root; a fresh login

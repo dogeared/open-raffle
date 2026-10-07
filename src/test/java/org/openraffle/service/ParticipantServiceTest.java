@@ -2,7 +2,10 @@ package org.openraffle.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openraffle.bgg.FakeBgg;
 import org.openraffle.domain.Event;
+import org.openraffle.image.PrizeImageStore;
+import org.springframework.test.context.TestPropertySource;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
 import org.openraffle.domain.TicketRange;
@@ -21,7 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({ParticipantService.class, PrizeService.class})
+@Import({ParticipantService.class, PrizeService.class, FakeBgg.class, PrizeImageStore.class})
+@TestPropertySource(properties = "raffle.images-dir=target/test-images")
 class ParticipantServiceTest {
 
     @Autowired

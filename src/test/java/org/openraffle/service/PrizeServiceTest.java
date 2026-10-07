@@ -2,7 +2,11 @@ package org.openraffle.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openraffle.bgg.FakeBgg;
+import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
+import org.openraffle.image.PrizeImageStore;
+import org.springframework.test.context.TestPropertySource;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import(PrizeService.class)
+@Import({PrizeService.class, FakeBgg.class, PrizeImageStore.class})
+@TestPropertySource(properties = "raffle.images-dir=target/test-images")
 class PrizeServiceTest {
 
     @Autowired
@@ -30,6 +35,79 @@ class PrizeServiceTest {
     @BeforeEach
     void event() {
         event = event("Fair");
+    }
+
+    @Autowired
+    FakeBggClient bgg;
+    @Autowired
+    PrizeImageStore images;
+
+    @Test
+    void linkingAGameDownloadsItsBoxImageOnceAndUnlinkingRemovesIt() {
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+
+        Prize saved = prizeService.save(prize);
+
+        assertThat(saved.getBggName()).isEqualTo("CATAN");
+        assertThat(saved.getBggImageId()).isEqualTo(13L);
+        assertThat(saved.getImageFile()).matches("prize-" + saved.getId() + "-[a-f0-9]{16}\\.png");
+        assertThat(saved.getImageUrl()).isEqualTo("images/" + saved.getImageFile());
+        assertThat(saved.getBggUrl()).isEqualTo("https://boardgamegeek.com/boardgame/13");
+        assertThat(images.resolve(saved.getImageFile())).isPresent();
+        assertThat(bgg.downloads).containsExactly(FakeBggClient.imageUrl(13));
+
+        // Saving again without changing the link does not call BGG again.
+        saved.setDescription("Red, 21 gears");
+        saved = prizeService.save(saved);
+        assertThat(bgg.downloads).hasSize(1);
+
+        // Re-linking to another game swaps the picture.
+        String first = saved.getImageFile();
+        saved.setBggId(822L);
+        saved = prizeService.save(saved);
+        assertThat(saved.getImageFile()).isNotEqualTo(first);
+        assertThat(saved.getBggName()).isEqualTo("CATAN"); // the organizer's label is kept
+        assertThat(images.resolve(first)).isEmpty();
+        assertThat(bgg.downloads).hasSize(2);
+
+        // Unlinking drops the picture and the BGG details.
+        String second = saved.getImageFile();
+        saved.setBggId(null);
+        saved = prizeService.save(saved);
+        assertThat(saved.hasImage()).isFalse();
+        assertThat(saved.getBggImageId()).isNull();
+        assertThat(saved.getBggName()).isNull();
+        assertThat(images.resolve(second)).isEmpty();
+    }
+
+    @Test
+    void aGameWithoutArtOrAnUnreachableBggStillSaves() {
+        bgg.imagesAvailable = false;
+        Prize noArt = prize("Bike");
+        noArt.setBggId(13L);
+        Prize saved = prizeService.save(noArt);
+        assertThat(saved.hasImage()).isFalse();
+        assertThat(saved.getBggImageId()).isEqualTo(13L); // linked, nothing to fetch later
+
+        Prize unknown = prize("Mug");
+        unknown.setBggId(123456L); // not a thing the fake knows
+        saved = prizeService.save(unknown);
+        assertThat(saved.getBggId()).isEqualTo(123456L);
+        assertThat(saved.getBggImageId()).isNull(); // so the next save retries
+        assertThat(saved.hasImage()).isFalse();
+    }
+
+    @Test
+    void deletingAPrizeDeletesItsPicture() {
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+        Prize saved = prizeService.save(prize);
+        String file = saved.getImageFile();
+
+        prizeService.delete(saved);
+
+        assertThat(images.resolve(file)).isEmpty();
     }
 
     @Test

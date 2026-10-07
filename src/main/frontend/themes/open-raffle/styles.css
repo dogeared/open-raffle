@@ -165,3 +165,11 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   .poster { min-height: 100vh; padding: 0; }
   .poster-controls, vaadin-dev-tools, copilot-main { display: none !important; }
 }
+
+/* Prize pictures (box art from BoardGameGeek): small squares that keep their proportions. */
+.prize-thumbnail {
+  object-fit: contain;
+  border-radius: var(--lumo-border-radius-s);
+  background: var(--lumo-contrast-5pct);
+  flex-shrink: 0;
+}

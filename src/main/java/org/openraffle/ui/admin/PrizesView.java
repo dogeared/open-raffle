@@ -3,6 +3,7 @@ package org.openraffle.ui.admin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -10,6 +11,8 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.server.StreamResource;
@@ -26,6 +29,8 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import org.openraffle.bgg.BggClient;
+import org.openraffle.bgg.BggItem;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Prize;
 import org.openraffle.security.SecurityConfig;
@@ -36,6 +41,7 @@ import org.openraffle.service.QrCodeService;
 import java.io.ByteArrayInputStream;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.PrizeThumbnail;
 import org.openraffle.ui.ResponsiveColumns;
 
 import java.util.List;
@@ -62,10 +68,13 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
      */
     private final Image qr = new Image();
 
-    public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService) {
+    private final BggClient bgg;
+
+    public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService, BggClient bgg) {
         this.prizeService = prizeService;
         this.eventService = eventService;
         this.qrCodeService = qrCodeService;
+        this.bgg = bgg;
         setSizeFull();
 
         Button add = new Button("Add prize", VaadinIcon.PLUS.create(), e -> openEditor(newPrize()));
@@ -96,6 +105,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         // auto-sized column measured while the grid was collapsed once truncated it to "1…".
         grid.addColumn(prize -> pages.getPage() * pages.getPageSize() + currentPage.indexOf(prize) + 1)
                 .setHeader("#").setKey("number").setWidth("4em").setFlexGrow(0);
+        Grid.Column<Prize> picture = grid.addComponentColumn(prize -> {
+            Image thumbnail = PrizeThumbnail.of(prize, "2.5rem");
+            return thumbnail == null ? new Span() : thumbnail;
+        }).setHeader("").setKey("picture").setWidth("3.5em").setFlexGrow(0);
         grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         Grid.Column<Prize> description = grid.addColumn(Prize::getDescription)
                 .setHeader("Description").setKey("description").setWidth("8em").setFlexGrow(3);
@@ -109,7 +122,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
             return actions;
         }).setHeader("").setKey("actions").setAutoWidth(true).setFlexGrow(0);
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
-        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(description));
+        ResponsiveColumns.hideOnNarrowScreens(grid, List.of(picture, description));
         grid.setSizeFull();
 
         add(toolbar, grid, pages);
@@ -132,6 +145,39 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
                 () -> new ByteArrayInputStream(qrCodeService.pngFor(target, sizePx)));
     }
 
+    /**
+     * Type-ahead over BoardGameGeek, like the search box on BGG itself: two or more
+     * characters bring up matching games and expansions, newest matches first. Picking one
+     * fills an empty Name. Without an API token the field explains how to turn it on.
+     */
+    private ComboBox<BggItem> bggField(TextField name) {
+        ComboBox<BggItem> game = new ComboBox<>("BoardGameGeek");
+        game.setItemLabelGenerator(BggItem::label);
+        game.setPlaceholder("Search BoardGameGeek…");
+        game.setClearButtonVisible(true);
+        game.setPageSize(20);
+        game.setWidthFull();
+        if (!bgg.isEnabled()) {
+            game.setEnabled(false);
+            game.setHelperText("Set BGG_API_KEY to look games up on BoardGameGeek.");
+            return game;
+        }
+        game.setHelperText("Start typing a game's name; the box image is saved with the prize.");
+        game.setItems(query -> {
+            String filter = query.getFilter().orElse("").trim();
+            if (filter.length() < 2) {
+                return java.util.stream.Stream.empty();
+            }
+            return bgg.search(filter).stream().skip(query.getOffset()).limit(query.getLimit());
+        });
+        game.addValueChangeListener(e -> {
+            if (e.getValue() != null && e.isFromClient() && name.isEmpty()) {
+                name.setValue(e.getValue().name());
+            }
+        });
+        return game;
+    }
+
     private Prize newPrize() {
         Prize prize = new Prize();
         prize.setEvent(event);
@@ -152,15 +198,29 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
 
         TextField name = new TextField("Name");
         TextArea description = new TextArea("Description");
+        ComboBox<BggItem> game = bggField(name);
 
         BeanValidationBinder<Prize> binder = new BeanValidationBinder<>(Prize.class);
         binder.forField(name).asRequired("Name is required").bind(Prize::getName, Prize::setName);
         binder.forField(description).bind(Prize::getDescription, Prize::setDescription);
+        binder.forField(game).bind(
+                p -> p.getBggId() == null ? null : new BggItem(p.getBggId(), p.getBggName() == null ? "BGG #" + p.getBggId() : p.getBggName(), null),
+                (p, item) -> {
+                    p.setBggId(item == null ? null : item.id());
+                    p.setBggName(item == null ? null : item.name());
+                });
         binder.readBean(prize);
 
-        FormLayout form = new FormLayout(name, description);
+        FormLayout form = new FormLayout(game, name, description);
+        form.setColspan(game, 2);
         form.setColspan(name, 2);
         form.setColspan(description, 2);
+        Image current = PrizeThumbnail.of(prize, "6rem");
+        if (current != null) {
+            Div preview = new Div(current);
+            preview.getElement().setAttribute("title", "The current picture, from BoardGameGeek");
+            dialog.add(preview);
+        }
         dialog.add(form);
 
         Button save = new Button("Save", e -> {

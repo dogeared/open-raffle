@@ -1,6 +1,7 @@
 package org.openraffle.ui;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
@@ -11,7 +12,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import org.junit.jupiter.api.Test;
+import org.openraffle.bgg.BggItem;
+import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
 import org.openraffle.ui.admin.PosterView;
@@ -31,6 +35,9 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._setValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PrizesViewTest extends KaribuTest {
+
+    @Autowired
+    FakeBggClient bgg;
 
     @SuppressWarnings("unchecked")
     private static Grid<Prize> grid() {
@@ -71,6 +78,49 @@ class PrizesViewTest extends KaribuTest {
     }
 
     @Test
+    void theEditorLooksGamesUpOnBggFillsTheNameAndSavesThePicture() {
+        Event fair = openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+
+        @SuppressWarnings("unchecked")
+        ComboBox<BggItem> game = _get(ComboBox.class, spec -> spec.withLabel("BoardGameGeek"));
+        assertThat(game.isEnabled()).isTrue();
+        assertThat(game.getHelperText()).contains("box image");
+        _setValue(game, new BggItem(13, "CATAN", 1995));
+        assertThat(_get(TextField.class, spec -> spec.withLabel("Name")).getValue()).isEqualTo("CATAN");
+        _setValue(_get(TextField.class, spec -> spec.withLabel("Name")), "Catan (base game)");
+        _click(_get(Button.class, spec -> spec.withText("Save")));
+
+        Prize saved = prizes.findAllByEventAlphabetically(fair).get(0);
+        assertThat(saved.getName()).isEqualTo("Catan (base game)");
+        assertThat(saved.getBggId()).isEqualTo(13L);
+        assertThat(saved.getBggName()).isEqualTo("CATAN");
+        assertThat(saved.hasImage()).isTrue();
+        // The grid shows the picture, and the editor shows it with the link preselected.
+        Image thumbnail = _getCellComponent(grid(), 0, "picture") instanceof Image i ? i : null;
+        assertThat(thumbnail).isNotNull();
+        assertThat(thumbnail.getSrc()).isEqualTo(saved.getImageUrl());
+        HorizontalLayout actions = (HorizontalLayout) _getCellComponent(grid(), 0, "actions");
+        _click((Button) actions.getComponentAt(0));
+        @SuppressWarnings("unchecked")
+        ComboBox<BggItem> again = _get(ComboBox.class, spec -> spec.withLabel("BoardGameGeek"));
+        assertThat(again.getValue().id()).isEqualTo(13L);
+        assertThat(again.getValue().name()).isEqualTo("CATAN");
+    }
+
+    @Test
+    void withoutAnApiKeyTheBggFieldIsOffAndExplainsWhy() {
+        bgg.enabled = false;
+        openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+
+        ComboBox<?> game = _get(ComboBox.class, spec -> spec.withLabel("BoardGameGeek"));
+
+        assertThat(game.isEnabled()).isFalse();
+        assertThat(game.getHelperText()).contains("BGG_API_KEY");
+    }
+
+    @Test
     void prizesAreAddedEditedAndListedAlphabetically() {
         Event fair = openPrizes();
         prize(fair, "mug");
@@ -83,15 +133,15 @@ class PrizesViewTest extends KaribuTest {
         _assertNoDialogs();
 
         assertThat(_size(grid())).isEqualTo(2);
-        assertThat(_getFormattedRow(grid(), 0)).startsWith("1", "Bike");
-        assertThat(_getFormattedRow(grid(), 1)).startsWith("2", "mug");
+        assertThat(_getFormattedRow(grid(), 0)).containsSubsequence("1", "Bike");
+        assertThat(_getFormattedRow(grid(), 1)).containsSubsequence("2", "mug");
 
         HorizontalLayout actions = (HorizontalLayout) _getCellComponent(grid(), 1, "actions");
         _click((Button) actions.getComponentAt(0));
         _setValue(_get(TextField.class, spec -> spec.withLabel("Name")), "Apple");
         _click(_get(Button.class, spec -> spec.withText("Save")));
 
-        assertThat(_getFormattedRow(grid(), 0)).startsWith("1", "Apple");
+        assertThat(_getFormattedRow(grid(), 0)).containsSubsequence("1", "Apple");
         assertThat(prizes.count()).isEqualTo(2);
     }
 
@@ -119,13 +169,13 @@ class PrizesViewTest extends KaribuTest {
         navigate("events/" + fair.getId());
 
         assertThat(_size(grid())).isEqualTo(10);
-        assertThat(_getFormattedRow(grid(), 9)).startsWith("10", "Prize 10");
+        assertThat(_getFormattedRow(grid(), 9)).containsSubsequence("10", "Prize 10");
         assertThat(_get(Span.class, spec -> spec.withText("1–10 of 14"))).isNotNull();
 
         _click(_get(Button.class, spec -> spec.withPredicate(b -> "Next page".equals(b.getAriaLabel().orElse("")))));
 
         assertThat(_size(grid())).isEqualTo(4);
-        assertThat(_getFormattedRow(grid(), 0)).startsWith("11", "Prize 11");
+        assertThat(_getFormattedRow(grid(), 0)).containsSubsequence("11", "Prize 11");
         assertThat(_get(Span.class, spec -> spec.withText("11–14 of 14"))).isNotNull();
 
         _setValue(_get(Select.class), 25);

@@ -3,6 +3,7 @@ package org.openraffle.ui.pub;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -21,6 +22,7 @@ import org.openraffle.service.EventService;
 import org.openraffle.service.PrizeService;
 import org.openraffle.ui.AppFooter;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.PrizeThumbnail;
 
 import java.util.List;
 
@@ -99,6 +101,10 @@ public class PrizeListView extends VerticalLayout implements BeforeEnterObserver
             label.add(desc);
         }
         HorizontalLayout row = new HorizontalLayout(label);
+        Image thumbnail = PrizeThumbnail.of(prize, "3rem");
+        if (thumbnail != null) {
+            row.addComponentAsFirst(thumbnail);
+        }
         row.setWidthFull();
         row.setAlignItems(FlexComponent.Alignment.CENTER);
         row.addClassNames(LumoUtility.Padding.SMALL, LumoUtility.BorderRadius.MEDIUM, LumoUtility.Background.CONTRAST_5);

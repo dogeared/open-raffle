@@ -5,6 +5,27 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-10-07
+
+### Added
+- **BoardGameGeek lookup in the prize editor.** A type-ahead field searches BGG as you
+  type (games and expansions, exact and prefix matches first, like BGG's own search box).
+  Picking a game fills in an empty prize name, saves the BGG id with the prize, and
+  downloads the game's box image once into `RAFFLE_IMAGES_DIR`. Pictures show as
+  thumbnails on the prizes grid (not on phones), the public prize list and participants'
+  wishlists, and in the editor. Unlinking the game removes the picture; deleting the prize
+  does too. Needs `BGG_API_KEY` (a token for an application registered at
+  boardgamegeek.com/applications); without it the field is disabled and says so.
+- Pictures are served at `/images/<name>` without login. Names are minted by the app and
+  validated on every request, downloads are checked to really be JPEG, PNG, GIF or WebP
+  and capped at 8 MB, and BGG's XML is parsed with DOCTYPEs and external entities off.
+- `render.yaml` mounts a 1 GB disk at `/var/data` for the pictures and prompts for
+  `BGG_API_KEY`.
+
+### Roadmap
+- 1.7.0: organizers upload their own prize photos, hardened per the OWASP File Upload
+  Cheat Sheet (see the README).
+
 ## [1.5.1] - 2026-10-07
 
 ### Changed

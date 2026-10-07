@@ -78,6 +78,8 @@ All settings are environment variables with local-dev defaults (see
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port (injected by Render and similar hosts) |
 | `RAFFLE_PUBLIC_URL` | *(derived from each request)* | Base URL embedded in QR codes, e.g. `https://raffle.example.com`. Set this in production; phones must be able to open it. |
+| `BGG_API_KEY` | *(empty: lookup hidden)* | BoardGameGeek API token for the prize editor's game lookup; see [BoardGameGeek lookup](#boardgamegeek-lookup). |
+| `RAFFLE_IMAGES_DIR` | `./data/images` | Where prize pictures are stored. Must persist across restarts and deploys (on Render, a mounted disk; `render.yaml` sets `/var/data/images`). |
 | `DB_URL` | `jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}` | Full JDBC URL; or set the parts below |
 | `DB_HOST` / `DB_PORT` / `DB_NAME` | `localhost` / `5432` / `raffle` | Database location, as managed Postgres providers hand it out |
 | `DB_USER` / `DB_PASSWORD` | `raffle` / `raffle` | Database credentials |
@@ -219,3 +221,35 @@ See [CHANGELOG.md](CHANGELOG.md).
 ## License
 
 [MIT](LICENSE)
+
+## BoardGameGeek lookup
+
+The prize editor can look games up on [BoardGameGeek](https://boardgamegeek.com): start
+typing in the **BoardGameGeek** field and pick the game, like the search box on BGG itself.
+Picking one fills in the prize name (if empty), stores the BGG id with the prize and
+downloads the game's box image once into `RAFFLE_IMAGES_DIR`; the picture then shows on the
+prizes grid, the public prize list and participants' wishlists without further API calls.
+Unlinking the game removes the picture.
+
+BGG's XML API requires a registered application and a bearer token:
+
+1. Register an application at <https://boardgamegeek.com/applications> and, once approved,
+   create a token under **Tokens**.
+2. Set it as `BGG_API_KEY` (locally in your shell or `.env`; on Render as the prompted
+   environment variable). Without it the field is disabled and says so.
+
+Images are served from `/images/<name>` without login; names are minted by the app
+(`prize-<id>-<random>.<jpg|png|gif|webp>`), anything else is a 404, and the files are
+checked to really be images before they are stored.
+
+## Roadmap
+
+- **1.7.0 — organizer photo uploads.** Organizers and admins upload their own prize
+  pictures (several per prize). Following the
+  [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html):
+  allow-list of extensions and content types verified by magic bytes, server-minted file
+  names (no user-supplied paths), a size limit per file and per request, a per-user rate
+  limit on uploads, storage outside the web root served only through the image endpoint
+  with `nosniff`, image re-encoding to strip metadata and payloads, and tests for every
+  rejection path (traversal, double extensions, polyglots, oversize, wrong type).
+
