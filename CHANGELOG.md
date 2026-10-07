@@ -5,6 +5,14 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-10-07
+
+### Changed
+- The QR code beside the Prizes heading is bigger, so an organizer can turn the screen
+  toward someone and have them scan it straight away; clicking it still opens the
+  full-size, downloadable one. On a phone the page's buttons drop under the heading
+  instead of running off the screen.
+
 ## [1.5.0] - 2026-10-07
 
 ### Added

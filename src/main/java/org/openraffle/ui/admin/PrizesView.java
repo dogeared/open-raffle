@@ -56,7 +56,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     private final Anchor publicList = new Anchor();
 
     private final QrCodeService qrCodeService;
-    /** A small QR code for the public list beside the heading; click it for a big one. */
+    /**
+     * The public list's QR code beside the heading, big enough for an organizer to turn the
+     * screen toward someone and have them scan it; click it for a full-size one to download.
+     */
     private final Image qr = new Image();
 
     public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService) {
@@ -72,8 +75,8 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         Button publicListButton = new Button("Public list", VaadinIcon.EXTERNAL_LINK.create());
         publicListButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         publicList.add(publicListButton);
-        qr.setWidth("3.5rem");
-        qr.setHeight("3.5rem");
+        qr.setWidth("8rem");
+        qr.setHeight("8rem");
         qr.getStyle().set("cursor", "pointer");
         qr.getElement().setAttribute("title", "Show a QR code for the public prize list");
         qr.getElement().setAttribute("role", "button");
@@ -85,6 +88,8 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         toolbar.setAlignItems(Alignment.CENTER);
         toolbar.expand(title);
         toolbar.setWidthFull();
+        // On a phone the buttons drop under the heading and QR code instead of overflowing.
+        toolbar.setWrap(true);
 
         // Alphabetical; participants rank prizes themselves on their wishlist page. The row
         // number is for readability only and keeps counting across pages. Fixed width: an
@@ -115,7 +120,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         EventScopedView.resolve(enter, eventService).ifPresent(e -> {
             event = e;
             publicList.setHref("e/" + event.getSlug());
-            qr.setSrc(qrPng(96));
+            qr.setSrc(qrPng(256));
             qr.setAlt("QR code for the public prize list of " + event.getName());
             refresh();
         });
