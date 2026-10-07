@@ -8,7 +8,11 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -27,6 +31,9 @@ import org.openraffle.domain.Prize;
 import org.openraffle.security.SecurityConfig;
 import org.openraffle.service.EventService;
 import org.openraffle.service.PrizeService;
+import org.openraffle.service.QrCodeService;
+
+import java.io.ByteArrayInputStream;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
 import org.openraffle.ui.ResponsiveColumns;
@@ -48,9 +55,14 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     /** Opens the event's login-free prize list, /e/<slug>, in a new tab. */
     private final Anchor publicList = new Anchor();
 
-    public PrizesView(PrizeService prizeService, EventService eventService) {
+    private final QrCodeService qrCodeService;
+    /** A small QR code for the public list beside the heading; click it for a big one. */
+    private final Image qr = new Image();
+
+    public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService) {
         this.prizeService = prizeService;
         this.eventService = eventService;
+        this.qrCodeService = qrCodeService;
         setSizeFull();
 
         Button add = new Button("Add prize", VaadinIcon.PLUS.create(), e -> openEditor(newPrize()));
@@ -60,9 +72,18 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         Button publicListButton = new Button("Public list", VaadinIcon.EXTERNAL_LINK.create());
         publicListButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         publicList.add(publicListButton);
-        HorizontalLayout toolbar = new HorizontalLayout(new H2("Prizes"), publicList, add);
-        toolbar.setAlignItems(Alignment.BASELINE);
-        toolbar.expand(toolbar.getComponentAt(0));
+        qr.setWidth("3.5rem");
+        qr.setHeight("3.5rem");
+        qr.getStyle().set("cursor", "pointer");
+        qr.getElement().setAttribute("title", "Show a QR code for the public prize list");
+        qr.getElement().setAttribute("role", "button");
+        qr.getElement().setAttribute("tabindex", "0");
+        qr.addClickListener(e -> showQr());
+        HorizontalLayout title = new HorizontalLayout(new H2("Prizes"), qr);
+        title.setAlignItems(Alignment.CENTER);
+        HorizontalLayout toolbar = new HorizontalLayout(title, publicList, add);
+        toolbar.setAlignItems(Alignment.CENTER);
+        toolbar.expand(title);
         toolbar.setWidthFull();
 
         // Alphabetical; participants rank prizes themselves on their wishlist page. The row
@@ -94,8 +115,41 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         EventScopedView.resolve(enter, eventService).ifPresent(e -> {
             event = e;
             publicList.setHref("e/" + event.getSlug());
+            qr.setSrc(qrPng(96));
+            qr.setAlt("QR code for the public prize list of " + event.getName());
             refresh();
         });
+    }
+
+    private StreamResource qrPng(int sizePx) {
+        Event target = event;
+        return new StreamResource("prizes-" + target.getSlug() + ".png",
+                () -> new ByteArrayInputStream(qrCodeService.pngFor(target, sizePx)));
+    }
+
+    /** The public list's QR code big enough to scan from a screen or a printout. */
+    private void showQr() {
+        Dialog dialog = new Dialog(event.getName());
+        String url = qrCodeService.prizeListUrl(event);
+        StreamResource png = qrPng(512);
+        Image image = new Image(png, "QR code for the public prize list of " + event.getName());
+        image.setWidth("min(70vw, 360px)");
+        image.setHeight("min(70vw, 360px)");
+        Paragraph hint = new Paragraph("Scan to see every prize in this raffle. No login needed.");
+        hint.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        Anchor link = new Anchor(url, url);
+        link.setTarget("_blank");
+        link.addClassNames(LumoUtility.FontSize.SMALL);
+
+        VerticalLayout content = new VerticalLayout(hint, image, link);
+        content.setAlignItems(Alignment.CENTER);
+        content.setPadding(false);
+        dialog.add(content);
+
+        Anchor download = new Anchor(png, "Download PNG");
+        download.getElement().setAttribute("download", true);
+        dialog.getFooter().add(download, new Button("Close", e -> dialog.close()));
+        dialog.open();
     }
 
     private Prize newPrize() {

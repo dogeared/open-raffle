@@ -6,6 +6,7 @@ import com.vaadin.flow.server.VaadinServletService;
 import com.vaadin.flow.internal.CurrentInstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -46,6 +47,16 @@ class QrCodeServiceTest {
         assertThatThrownBy(() -> service.wishlistUrl(participant("abc")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("raffle.public-url");
+    }
+
+    @Test
+    void theEventsPublicListUrlUsesItsSlug() {
+        QrCodeService service = new QrCodeService("https://raffle.example.com");
+        Event fair = new Event();
+        fair.setName("Carnage & Fun 29");
+
+        assertThat(service.prizeListUrl(fair)).isEqualTo("https://raffle.example.com/e/carnage-fun-29");
+        assertThat(service.pngFor(fair, 96)).startsWith((byte) 0x89, (byte) 'P', (byte) 'N', (byte) 'G');
     }
 
     @Test

@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The URL uses the event's name, not its id: lowercased, words joined by single dashes,
   accents folded and other characters dropped, so "Carnage & Fun 29" lives at
   `/e/carnage-fun-29`. Deleted events are not found there. A **Public list** button on
-  the Prizes page opens it in a new tab.
+  the Prizes page opens it in a new tab, and a QR code beside the Prizes heading opens a
+  large, downloadable one to put on a screen or a sign at the event.
 
 ### Changed
 - An event name must have at least one letter or digit, and two active events cannot

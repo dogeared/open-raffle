@@ -3,7 +3,9 @@ package org.openraffle.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -52,6 +54,23 @@ class PrizesViewTest extends KaribuTest {
         assertThat(publicList.getHref()).isEqualTo("e/spring-fair");
         assertThat(publicList.getTarget()).contains("_blank");
         assertThat(publicList.getElement().getTextRecursively()).contains("Public list");
+    }
+
+    @Test
+    void aQrCodeBesideTheHeadingOpensABigOneForThePublicList() {
+        openPrizes();
+
+        Image small = _get(Image.class, spec -> spec.withPredicate(i -> i.getAlt().orElse("").contains("public prize list")));
+        assertThat(small.getSrc()).endsWith("prizes-spring-fair.png");
+
+        _click(small);
+
+        Dialog dialog = _get(Dialog.class, spec -> spec.withPredicate(d -> "Spring fair".equals(d.getHeaderTitle())));
+        assertThat(dialog.isOpened()).isTrue();
+        Anchor link = _get(dialog, Anchor.class, spec -> spec.withPredicate(a -> a.getHref().contains("/e/")));
+        assertThat(link.getHref()).endsWith("/e/spring-fair").startsWith("http");
+        assertThat(_get(dialog, Image.class).getAlt()).hasValueSatisfying(alt -> assertThat(alt).contains("Spring fair"));
+        assertThat(_get(dialog, Anchor.class, spec -> spec.withText("Download PNG")).getElement().hasAttribute("download")).isTrue();
     }
 
     @Test
