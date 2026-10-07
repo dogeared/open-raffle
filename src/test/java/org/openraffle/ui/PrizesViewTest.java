@@ -3,8 +3,8 @@ package org.openraffle.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
+import org.openraffle.ui.admin.PosterView;
 import org.openraffle.ui.admin.PrizesView;
 
 import java.util.stream.IntStream;
@@ -57,20 +58,16 @@ class PrizesViewTest extends KaribuTest {
     }
 
     @Test
-    void aQrCodeBesideTheHeadingOpensABigOneForThePublicList() {
-        openPrizes();
+    void theQrCodeBesideTheHeadingOpensThePrintablePoster() {
+        Event fair = openPrizes();
 
         Image small = _get(Image.class, spec -> spec.withPredicate(i -> i.getAlt().orElse("").contains("public prize list")));
         assertThat(small.getSrc()).endsWith("prizes-spring-fair.png");
 
         _click(small);
 
-        Dialog dialog = _get(Dialog.class, spec -> spec.withPredicate(d -> "Spring fair".equals(d.getHeaderTitle())));
-        assertThat(dialog.isOpened()).isTrue();
-        Anchor link = _get(dialog, Anchor.class, spec -> spec.withPredicate(a -> a.getHref().contains("/e/")));
-        assertThat(link.getHref()).endsWith("/e/spring-fair").startsWith("http");
-        assertThat(_get(dialog, Image.class).getAlt()).hasValueSatisfying(alt -> assertThat(alt).contains("Spring fair"));
-        assertThat(_get(dialog, Anchor.class, spec -> spec.withText("Download PNG")).getElement().hasAttribute("download")).isTrue();
+        _assertOne(PosterView.class);
+        assertThat(_get(H1.class).getText()).isEqualTo(fair.getName());
     }
 
     @Test
