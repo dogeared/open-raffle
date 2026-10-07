@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
 import org.openraffle.repository.PrizeRepository;
@@ -84,7 +85,7 @@ public class PrizeService {
             prize.setBggName(thing.get().name());
         }
         String previous = prize.getImageFile();
-        Optional<BggImage> image = bgg.download(thing.get().imageUrl());
+        Optional<BggImage> image = downloadArt(thing.get());
         if (image.isEmpty()) {
             // A game without box art is still linked; just nothing to show.
             prize.setImageFile(null);
@@ -101,6 +102,40 @@ public class PrizeService {
         if (previous != null) {
             images.delete(previous);
         }
+    }
+
+    /** The full box image, or BGG's smaller thumbnail when the original is unusable (too big, say). */
+    private Optional<BggImage> downloadArt(BggThing thing) {
+        Optional<BggImage> image = bgg.download(thing.imageUrl());
+        if (image.isEmpty() && thing.thumbnailUrl() != null && !thing.thumbnailUrl().equals(thing.imageUrl())) {
+            image = bgg.download(thing.thumbnailUrl());
+        }
+        return image;
+    }
+
+    /**
+     * Brings back a picture whose file has gone missing (the host's filesystem was reset)
+     * by fetching it from BoardGameGeek again under the same name, so links and caches
+     * keep working. Empty when no prize uses that name, it has no BGG link, or BGG is down.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Path> restoreImage(String imageFile) {
+        if (imageFile == null || !PrizeImageStore.FILE_NAME.matcher(imageFile).matches()) {
+            return Optional.empty();
+        }
+        return prizes.findByImageFile(imageFile)
+                .filter(prize -> prize.getBggId() != null)
+                .flatMap(prize -> bgg.thing(prize.getBggId()))
+                .flatMap(this::downloadArt)
+                .flatMap(image -> {
+                    try {
+                        log.info("Restored prize image {} from BoardGameGeek", imageFile);
+                        return images.storeAs(imageFile, image.bytes());
+                    } catch (IOException e) {
+                        log.warn("Could not restore prize image {}: {}", imageFile, e.getMessage());
+                        return Optional.empty();
+                    }
+                });
     }
 
     public void delete(Prize prize) {

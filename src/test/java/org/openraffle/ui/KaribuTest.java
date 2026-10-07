@@ -114,6 +114,7 @@ public abstract class KaribuTest {
     void cleanSlate() {
         fakeBgg.enabled = true;
         fakeBgg.imagesAvailable = true;
+        fakeBgg.fullImagesAvailable = true;
         fakeBgg.downloads.clear();
         fakeBgg.searches.clear();
         wipeDatabase();

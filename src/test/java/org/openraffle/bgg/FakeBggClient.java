@@ -14,6 +14,8 @@ public class FakeBggClient implements BggClient {
 
     public boolean enabled = true;
     public boolean imagesAvailable = true;
+    /** When false, only the thumbnail URL downloads, like an oversize original. */
+    public boolean fullImagesAvailable = true;
     public final List<BggItem> items = new ArrayList<>(List.of(
             new BggItem(13, "CATAN", 1995),
             new BggItem(2655, "Catan: Seafarers", 1997),
@@ -46,7 +48,10 @@ public class FakeBggClient implements BggClient {
     @Override
     public Optional<BggImage> download(String url) {
         downloads.add(url);
-        return imagesAvailable && url != null ? Optional.of(new BggImage(PNG, "png")) : Optional.empty();
+        if (!imagesAvailable || url == null || (!fullImagesAvailable && !url.endsWith("?thumb"))) {
+            return Optional.empty();
+        }
+        return Optional.of(new BggImage(PNG, "png"));
     }
 
     private static byte[] concat(byte[] a, byte[] b) {

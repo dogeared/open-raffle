@@ -79,7 +79,7 @@ All settings are environment variables with local-dev defaults (see
 | `PORT` | `8080` | HTTP port (injected by Render and similar hosts) |
 | `RAFFLE_PUBLIC_URL` | *(derived from each request)* | Base URL embedded in QR codes, e.g. `https://raffle.example.com`. Set this in production; phones must be able to open it. |
 | `BGG_API_KEY` | *(empty: lookup hidden)* | BoardGameGeek API token for the prize editor's game lookup; see [BoardGameGeek lookup](#boardgamegeek-lookup). |
-| `RAFFLE_IMAGES_DIR` | `./data/images` | Where prize pictures are stored. Must persist across restarts and deploys (on Render, a mounted disk; `render.yaml` sets `/var/data/images`). |
+| `RAFFLE_IMAGES_DIR` | `./data/images` | Where prize pictures are stored. Treated as a cache: a picture whose file is missing (e.g. after a deploy on a host without persistent disks) is fetched from BoardGameGeek again when first viewed. |
 | `DB_URL` | `jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}` | Full JDBC URL; or set the parts below |
 | `DB_HOST` / `DB_PORT` / `DB_NAME` | `localhost` / `5432` / `raffle` | Database location, as managed Postgres providers hand it out |
 | `DB_USER` / `DB_PASSWORD` | `raffle` / `raffle` | Database credentials |
@@ -240,10 +240,18 @@ BGG's XML API requires a registered application and a bearer token:
 
 Images are served from `/images/<name>` without login; names are minted by the app
 (`prize-<id>-<random>.<jpg|png|gif|webp>`), anything else is a 404, and the files are
-checked to really be images before they are stored.
+checked to really be images before they are stored. The directory is a cache: if a file is
+gone (Render's filesystem is reset on every deploy, and the blueprint attaches no disk), the
+picture is fetched from BGG again the first time someone views it.
 
 ## Roadmap
 
+- **External picture storage per event.** Instead of the local filesystem, an event could
+  be connected to a Google Drive folder: a connect flow on the event (OAuth consent, pick or
+  create a folder), a clear way to see the connection's state and to break and reconnect it,
+  pictures written to and read from that folder, and a fallback to the BoardGameGeek API
+  whenever a picture is not found there or the connection is unhealthy. Keeps Render
+  deploys zero-downtime and disk-free.
 - **1.7.0 — organizer photo uploads.** Organizers and admins upload their own prize
   pictures (several per prize). Following the
   [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html):

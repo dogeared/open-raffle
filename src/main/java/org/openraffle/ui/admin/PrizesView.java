@@ -164,11 +164,14 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         }
         game.setHelperText("Start typing a game's name; the box image is saved with the prize.");
         game.setItems(query -> {
+            // Vaadin insists the offset and limit are read on every call, even an empty one.
+            int offset = query.getOffset();
+            int limit = query.getLimit();
             String filter = query.getFilter().orElse("").trim();
             if (filter.length() < 2) {
                 return java.util.stream.Stream.empty();
             }
-            return bgg.search(filter).stream().skip(query.getOffset()).limit(query.getLimit());
+            return bgg.search(filter).stream().skip(offset).limit(limit);
         });
         game.addValueChangeListener(e -> {
             if (e.getValue() != null && e.isFromClient() && name.isEmpty()) {

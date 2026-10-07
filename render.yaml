@@ -32,12 +32,6 @@ services:
     dockerContext: .
     plan: 0.5c-512mb
     healthCheckPath: /actuator/health
-    # Prize pictures (box art fetched from BoardGameGeek) live on this disk so they survive
-    # deploys and restarts. Note: a service with a disk cannot do zero-downtime deploys.
-    disk:
-      name: open-raffle-images
-      mountPath: /var/data
-      sizeGB: 1
     # Deploy a push to the linked branch (main) only once its GitHub checks (the Tests
     # workflow) have passed. "commit" deploys immediately; "off" leaves it manual.
     autoDeployTrigger: checksPass
@@ -57,8 +51,9 @@ services:
       # to hide the lookup.
       - key: BGG_API_KEY
         sync: false
-      - key: RAFFLE_IMAGES_DIR
-        value: /var/data/images
+      # No disk is attached (it would cost money and end zero-downtime deploys): prize
+      # pictures live in the container's filesystem as a cache and are fetched from BGG
+      # again on first view after a deploy. See the README's roadmap for external storage.
       - key: DB_HOST
         fromDatabase:
           name: open-raffle-db

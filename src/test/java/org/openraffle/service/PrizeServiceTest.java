@@ -34,6 +34,9 @@ class PrizeServiceTest {
 
     @BeforeEach
     void event() {
+        bgg.downloads.clear();
+        bgg.imagesAvailable = true;
+        bgg.fullImagesAvailable = true;
         event = event("Fair");
     }
 
@@ -96,6 +99,37 @@ class PrizeServiceTest {
         assertThat(saved.getBggId()).isEqualTo(123456L);
         assertThat(saved.getBggImageId()).isNull(); // so the next save retries
         assertThat(saved.hasImage()).isFalse();
+    }
+
+    @Test
+    void aLostPictureIsFetchedAgainUnderTheSameName() throws java.io.IOException {
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+        Prize saved = prizeService.save(prize);
+        String file = saved.getImageFile();
+        java.nio.file.Files.delete(images.resolve(file).orElseThrow());
+        assertThat(images.resolve(file)).isEmpty();
+
+        assertThat(prizeService.restoreImage(file)).isPresent();
+        assertThat(images.resolve(file)).isPresent();
+        assertThat(bgg.downloads).hasSize(2);
+
+        // Names nobody uses, prizes without a BGG link, and junk are simply not restored.
+        assertThat(prizeService.restoreImage("prize-999-0123456789abcdef.png")).isEmpty();
+        assertThat(prizeService.restoreImage("../etc/passwd")).isEmpty();
+        assertThat(prizeService.restoreImage(null)).isEmpty();
+    }
+
+    @Test
+    void theThumbnailStandsInWhenTheFullImageIsUnusable() {
+        bgg.fullImagesAvailable = false;
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+
+        Prize saved = prizeService.save(prize);
+
+        assertThat(saved.hasImage()).isTrue();
+        assertThat(bgg.downloads).containsExactly(FakeBggClient.imageUrl(13), FakeBggClient.imageUrl(13) + "?thumb");
     }
 
     @Test

@@ -54,6 +54,27 @@ public class PrizeImageStore {
         return name;
     }
 
+    /**
+     * Re-creates a file under a name this store minted earlier (the prize still refers to
+     * it) after the file was lost, e.g. on a host whose filesystem does not survive a
+     * deploy. A second writer losing the race is fine: the bytes are the same picture.
+     */
+    public Optional<Path> storeAs(String name, byte[] bytes) throws IOException {
+        if (name == null || !FILE_NAME.matcher(name).matches()) {
+            throw new IllegalArgumentException("Not a prize image name: " + name);
+        }
+        Path target = dir.resolve(name).normalize();
+        if (!target.getParent().equals(dir)) {
+            throw new IllegalArgumentException("Not a prize image name: " + name);
+        }
+        try {
+            Files.write(target, bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+        } catch (java.nio.file.FileAlreadyExistsException e) {
+            // someone else restored it first
+        }
+        return resolve(name);
+    }
+
     /** The file for a stored image name, if the name is one of ours and the file exists. */
     public Optional<Path> resolve(String name) {
         if (name == null || !FILE_NAME.matcher(name).matches()) {

@@ -19,10 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pictures are served at `/images/<name>` without login. Names are minted by the app and
   validated on every request, downloads are checked to really be JPEG, PNG, GIF or WebP
   and capped at 8 MB, and BGG's XML is parsed with DOCTYPEs and external entities off.
-- `render.yaml` mounts a 1 GB disk at `/var/data` for the pictures and prompts for
-  `BGG_API_KEY`.
+- The pictures directory is a cache: a picture whose file has gone missing (Render resets
+  the filesystem on every deploy, and the blueprint attaches no disk, keeping deploys
+  zero-downtime and free of disk charges) is fetched from BoardGameGeek again the first
+  time it is viewed. When BGG's full-size image is unusable, its thumbnail is used.
+- `render.yaml` prompts for `BGG_API_KEY`.
 
 ### Roadmap
+- Per-event external picture storage (a connected Google Drive folder, with a connect /
+  break / reconnect flow and a fallback to the BGG API when a picture is missing or the
+  connection is unhealthy).
 - 1.7.0: organizers upload their own prize photos, hardened per the OWASP File Upload
   Cheat Sheet (see the README).
 

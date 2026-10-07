@@ -1,5 +1,6 @@
 package org.openraffle.image;
 
+import org.openraffle.service.PrizeService;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -17,20 +18,24 @@ import java.util.concurrent.TimeUnit;
 /**
  * Serves stored prize images at {@code /images/<name>} to everyone (the public prize list
  * and participants' wishlists show them). Names are validated by the store; a name that
- * is not one of ours is a 404, whatever else it contains.
+ * is not one of ours is a 404, whatever else it contains. A picture whose file is gone is
+ * fetched from BoardGameGeek again on the spot, so hosts without persistent disks work.
  */
 @RestController
 public class ImageController {
 
     private final PrizeImageStore store;
+    private final PrizeService prizes;
 
-    public ImageController(PrizeImageStore store) {
+    public ImageController(PrizeImageStore store, PrizeService prizes) {
         this.store = store;
+        this.prizes = prizes;
     }
 
     @GetMapping("/images/{name}")
     public ResponseEntity<Resource> image(@PathVariable String name) {
-        Optional<Path> file = store.resolve(name);
+        // Missing on disk (fresh deploy, no persistent storage)? Fetch it from BGG again.
+        Optional<Path> file = store.resolve(name).or(() -> prizes.restoreImage(name));
         if (file.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

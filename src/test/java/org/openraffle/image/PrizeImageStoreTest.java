@@ -62,6 +62,18 @@ class PrizeImageStoreTest {
     }
 
     @Test
+    void storeAsRecreatesAMintedNameAndRefusesAnyOther() throws IOException {
+        PrizeImageStore store = new PrizeImageStore(dir.toString());
+        String name = "prize-5-0123456789abcdef.jpg";
+
+        assertThat(store.storeAs(name, new byte[]{1})).isPresent();
+        assertThat(store.storeAs(name, new byte[]{2})).isPresent(); // already there: kept, no error
+        assertThat(Files.readAllBytes(dir.resolve(name))).containsExactly(1);
+        assertThatThrownBy(() -> store.storeAs("../evil.jpg", new byte[]{1})).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> store.storeAs("prize-5-0123456789abcdef.svg", new byte[]{1})).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void onlyImageExtensionsCanBeStoredAndTheDirectoryIsCreated() {
         Path nested = dir.resolve("a/b/images");
         PrizeImageStore store = new PrizeImageStore(nested.toString());

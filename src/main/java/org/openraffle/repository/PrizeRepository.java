@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PrizeRepository extends JpaRepository<Prize, Long> {
 
@@ -18,6 +19,8 @@ public interface PrizeRepository extends JpaRepository<Prize, Long> {
     List<Prize> findAllByClaimedBy(Participant participant);
 
     List<Prize> findAllByEventAndClaimedByIsNotNullOrderByClaimedAtDesc(Event event);
+
+    Optional<Prize> findByImageFile(String imageFile);
 
     long countByEventIsNull();
 
