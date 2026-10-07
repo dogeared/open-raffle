@@ -47,6 +47,11 @@ public class Event {
         return id;
     }
 
+    /** The name as it appears in the event's public URL, e.g. "carnage-fun-29". */
+    public String getSlug() {
+        return Slug.of(name);
+    }
+
     public String getName() {
         return name;
     }

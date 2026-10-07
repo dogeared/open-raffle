@@ -87,6 +87,25 @@ class EventServiceTest {
     }
 
     @Test
+    void namesThatShareAPublicLinkAreRejectedButDeletedEventsFreeTheirs() {
+        user.admin();
+        Event fair = eventService.create("Carnage & Fun 29");
+        assertThat(fair.getSlug()).isEqualTo("carnage-fun-29");
+
+        assertThatThrownBy(() -> eventService.create("Carnage Fun 29"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("/e/carnage-fun-29");
+        assertThatThrownBy(() -> eventService.create("!!!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("public link");
+
+        assertThat(eventService.findActiveBySlug("carnage-fun-29")).contains(fair);
+        eventService.softDelete(fair);
+        assertThat(eventService.findActiveBySlug("carnage-fun-29")).isEmpty();
+        assertThat(eventService.create("Carnage Fun 29").getSlug()).isEqualTo("carnage-fun-29");
+    }
+
+    @Test
     void namesMustBeUniqueIgnoringCase() {
         user.admin();
         eventService.create("Spring Fair");

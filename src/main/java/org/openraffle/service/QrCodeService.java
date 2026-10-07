@@ -8,6 +8,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.vaadin.flow.server.VaadinServletRequest;
+import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,11 @@ public class QrCodeService {
         return publicBaseUrl() + "/p/" + participant.getToken();
     }
 
+    /** The event's login-free prize list, named after the event rather than its id. */
+    public String prizeListUrl(Event event) {
+        return publicBaseUrl() + "/e/" + event.getSlug();
+    }
+
     /**
      * {@code raffle.public-url} (env {@code RAFFLE_PUBLIC_URL}) when set; otherwise the
      * scheme, host and port of the current request. Behind a proxy the request-derived
@@ -53,9 +59,18 @@ public class QrCodeService {
     }
 
     public byte[] pngFor(Participant participant, int sizePx) {
+        return pngFor(wishlistUrl(participant), sizePx);
+    }
+
+    public byte[] pngFor(Event event, int sizePx) {
+        return pngFor(prizeListUrl(event), sizePx);
+    }
+
+    /** A square PNG QR code that opens {@code url}. */
+    public byte[] pngFor(String url, int sizePx) {
         try {
             BitMatrix matrix = new QRCodeWriter().encode(
-                    wishlistUrl(participant), BarcodeFormat.QR_CODE, sizePx, sizePx,
+                    url, BarcodeFormat.QR_CODE, sizePx, sizePx,
                     Map.of(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M, EncodeHintType.MARGIN, 1));
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(matrix, "PNG", out);

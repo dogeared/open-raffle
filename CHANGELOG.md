@@ -5,6 +5,28 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-10-07
+
+### Added
+- **Public prize list.** Every active event has a login-free page at `/e/<event-name>`
+  showing its prizes the way participants see them on the wishlist page, with the same
+  pagination but nothing to pick; prizes already handed out carry a quiet "Claimed" tag.
+  The URL uses the event's name, not its id: lowercased, words joined by single dashes,
+  accents folded and other characters dropped, so "Carnage & Fun 29" lives at
+  `/e/carnage-fun-29`. Deleted events are not found there. A **Public list** button on
+  the Prizes page opens it in a new tab, and a QR code beside the Prizes heading opens a
+  large, downloadable one to put on a screen or a sign at the event.
+
+### Changed
+- An event name must have at least one letter or digit, and two active events cannot
+  share a public link (`Carnage & Fun 29` and `Carnage Fun 29`), so every event's public
+  page resolves to exactly one raffle.
+
+### Security
+- Embedded Tomcat 11.0.25 → 11.0.26 (SNYK-JAVA-ORGAPACHETOMCATEMBED-20552494, an
+  authentication bypass in the WebSocket module; the app does not use WebSockets, but the
+  dependency is updated all the same).
+
 ## [1.4.3] - 2026-10-04
 
 ### Fixed

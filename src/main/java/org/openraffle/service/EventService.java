@@ -88,7 +88,30 @@ public class EventService {
                 .ifPresent(other -> {
                     throw new IllegalArgumentException("An event named \"" + other.getName() + "\" already exists");
                 });
+        if (event.getSlug().isEmpty()) {
+            throw new IllegalArgumentException("Event name needs at least one letter or digit, for its public link");
+        }
+        events.findAllByDeletedAtIsNullOrderByNameAsc().stream()
+                .filter(other -> !other.equals(event) && other.getSlug().equals(event.getSlug()))
+                .findFirst()
+                .ifPresent(other -> {
+                    throw new IllegalArgumentException("\"" + other.getName() + "\" already uses the public link /e/" + other.getSlug());
+                });
         return events.save(event);
+    }
+
+    /**
+     * The active event whose name gives this public-URL slug, for the login-free prize list.
+     * Deleted events are not found, so an old link stops working when the raffle is over.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Event> findActiveBySlug(String slug) {
+        if (slug == null || slug.isEmpty()) {
+            return Optional.empty();
+        }
+        return events.findAllByDeletedAtIsNullOrderByNameAsc().stream()
+                .filter(event -> event.getSlug().equals(slug))
+                .findFirst();
     }
 
     public Event setOrganizers(Event event, Collection<String> emails) {
