@@ -1,6 +1,7 @@
 package org.openraffle.ui;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -57,10 +58,22 @@ class PrizeListViewTest extends KaribuTest {
 
         navigate("e/spring-fair");
 
-        assertThat(_find(Image.class)).singleElement().satisfies(image -> {
-            assertThat(image.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
-            assertThat(image.getAlt()).contains("Bike");
-        });
+        Image thumbnail = _get(Image.class);
+        assertThat(thumbnail.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
+        assertThat(thumbnail.getAlt()).contains("Bike");
+        assertThat(thumbnail.getElement().getAttribute("role")).isEqualTo("button");
+
+        // Clicking the little picture opens the big one.
+        _click(thumbnail);
+
+        Dialog dialog = _get(Dialog.class);
+        assertThat(dialog.isOpened()).isTrue();
+        assertThat(dialog.getHeaderTitle()).isEqualTo("Bike");
+        Image large = _get(dialog, Image.class);
+        assertThat(large.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
+        assertThat(large.getClassNames()).contains("prize-picture-large");
+        _click(_get(dialog, Button.class, spec -> spec.withText("Close")));
+        assertThat(dialog.isOpened()).isFalse();
     }
 
     @Test
