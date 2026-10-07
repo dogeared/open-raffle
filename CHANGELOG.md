@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The QR code beside the Prizes heading is bigger, so an organizer can turn the screen
-  toward someone and have them scan it straight away; clicking it still opens the
-  full-size, downloadable one. On a phone the page's buttons drop under the heading
-  instead of running off the screen.
+  toward someone and have them scan it straight away. On a phone the page's buttons drop
+  under the heading instead of running off the screen.
+- Clicking that QR code opens a **printable poster** instead of a dialog: a Letter-sized
+  page with the event name on top (on one line, sized to fit), the QR code in the middle
+  and "Scan for available prizes!" underneath, everything centered. Print it from the
+  browser, or download the QR code as a PNG.
 
 ## [1.5.0] - 2026-10-07
 

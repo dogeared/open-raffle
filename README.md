@@ -33,7 +33,7 @@ for Docker.
    the name is lowercased with words joined by dashes (`Carnage & Fun 29` →
    `/e/carnage-fun-29`): the same list participants see, without the picking. The
    **Public list** button on the Prizes page opens it, and the QR code beside the
-   heading opens a large, downloadable one for a sign or a screen at the event.
+   heading opens a printable Letter-sized poster of it for a sign at the event.
 5. **Draw** — type the drawn ticket number as printed. The winner's preferences appear with a checkbox
    per prize; tick the one they take. Prizes already claimed by earlier winners are struck
    through. Prizes not on their list can be given out too, and new prizes can be added and

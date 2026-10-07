@@ -117,3 +117,51 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .ticket-range-list li + li {
   margin-top: var(--lumo-space-xs);
 }
+
+/* The prize poster (PosterView): a Letter-sized sheet with the event name, the QR code
+   and "Scan for available prizes!" spread evenly down the page and centered. vh/vw are
+   the page's when printing, so the same rules fill the sheet. */
+.poster {
+  box-sizing: border-box;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 4vh 4vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  text-align: center;
+  background: #fff;
+  color: #000;
+  position: relative;
+}
+.poster-title {
+  color: #000;
+  margin: 0;
+  line-height: 1.1;
+  font-weight: 800;
+  white-space: nowrap;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.poster-qr {
+  width: min(52vh, 84vw);
+  height: min(52vh, 84vw);
+  image-rendering: pixelated; /* keeps the modules crisp when scaled */
+}
+.poster-message {
+  margin: 0;
+  font-size: min(11vmin, 10vw);
+  line-height: 1.1;
+  font-weight: 700;
+}
+.poster-controls {
+  position: absolute;
+  top: var(--lumo-space-s);
+  right: var(--lumo-space-s);
+}
+@media print {
+  .poster { min-height: 100vh; padding: 0; }
+  .poster-controls, vaadin-dev-tools, copilot-main { display: none !important; }
+}

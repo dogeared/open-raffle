@@ -1,5 +1,6 @@
 package org.openraffle.ui.admin;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -11,7 +12,6 @@ import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -58,7 +58,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     private final QrCodeService qrCodeService;
     /**
      * The public list's QR code beside the heading, big enough for an organizer to turn the
-     * screen toward someone and have them scan it; click it for a full-size one to download.
+     * screen toward someone and have them scan it; click it for a printable poster.
      */
     private final Image qr = new Image();
 
@@ -78,10 +78,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         qr.setWidth("8rem");
         qr.setHeight("8rem");
         qr.getStyle().set("cursor", "pointer");
-        qr.getElement().setAttribute("title", "Show a QR code for the public prize list");
+        qr.getElement().setAttribute("title", "Open a printable poster of this QR code");
         qr.getElement().setAttribute("role", "button");
         qr.getElement().setAttribute("tabindex", "0");
-        qr.addClickListener(e -> showQr());
+        qr.addClickListener(e -> UI.getCurrent().navigate(PosterView.class, PosterView.paramsFor(event)));
         HorizontalLayout title = new HorizontalLayout(new H2("Prizes"), qr);
         title.setAlignItems(Alignment.CENTER);
         HorizontalLayout toolbar = new HorizontalLayout(title, publicList, add);
@@ -130,31 +130,6 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         Event target = event;
         return new StreamResource("prizes-" + target.getSlug() + ".png",
                 () -> new ByteArrayInputStream(qrCodeService.pngFor(target, sizePx)));
-    }
-
-    /** The public list's QR code big enough to scan from a screen or a printout. */
-    private void showQr() {
-        Dialog dialog = new Dialog(event.getName());
-        String url = qrCodeService.prizeListUrl(event);
-        StreamResource png = qrPng(512);
-        Image image = new Image(png, "QR code for the public prize list of " + event.getName());
-        image.setWidth("min(70vw, 360px)");
-        image.setHeight("min(70vw, 360px)");
-        Paragraph hint = new Paragraph("Scan to see every prize in this raffle. No login needed.");
-        hint.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-        Anchor link = new Anchor(url, url);
-        link.setTarget("_blank");
-        link.addClassNames(LumoUtility.FontSize.SMALL);
-
-        VerticalLayout content = new VerticalLayout(hint, image, link);
-        content.setAlignItems(Alignment.CENTER);
-        content.setPadding(false);
-        dialog.add(content);
-
-        Anchor download = new Anchor(png, "Download PNG");
-        download.getElement().setAttribute("download", true);
-        dialog.getFooter().add(download, new Button("Close", e -> dialog.close()));
-        dialog.open();
     }
 
     private Prize newPrize() {
