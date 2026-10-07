@@ -5,6 +5,13 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-10-07
+
+### Changed
+- Prize pictures are clickable everywhere they appear (prizes grid, editor, public prize
+  list, wishlist): the thumbnail opens the full-size picture in a dialog, as large as the
+  window allows. Close it with the button, Escape or a click outside.
+
 ## [1.6.0] - 2026-10-07
 
 ### Added

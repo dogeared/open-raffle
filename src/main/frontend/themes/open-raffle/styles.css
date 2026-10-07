@@ -173,3 +173,16 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   background: var(--lumo-contrast-5pct);
   flex-shrink: 0;
 }
+.prize-thumbnail {
+  cursor: pointer;
+}
+/* The full-size picture dialog: as big as the window allows, box art proportions kept. */
+.prize-picture-large {
+  display: block;
+  max-width: min(90vw, 900px);
+  max-height: 75vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
