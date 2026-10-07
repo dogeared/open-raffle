@@ -7,6 +7,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -44,6 +45,8 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     private final Paginator<Prize> pages = new Paginator<>(this::showPage);
     private List<Prize> currentPage = List.of();
     private Event event;
+    /** Opens the event's login-free prize list, /e/<slug>, in a new tab. */
+    private final Anchor publicList = new Anchor();
 
     public PrizesView(PrizeService prizeService, EventService eventService) {
         this.prizeService = prizeService;
@@ -52,7 +55,12 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
 
         Button add = new Button("Add prize", VaadinIcon.PLUS.create(), e -> openEditor(newPrize()));
         add.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        HorizontalLayout toolbar = new HorizontalLayout(new H2("Prizes"), add);
+        publicList.setTarget("_blank");
+        publicList.getElement().setAttribute("title", "The login-free prize list to share with everyone");
+        Button publicListButton = new Button("Public list", VaadinIcon.EXTERNAL_LINK.create());
+        publicListButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        publicList.add(publicListButton);
+        HorizontalLayout toolbar = new HorizontalLayout(new H2("Prizes"), publicList, add);
         toolbar.setAlignItems(Alignment.BASELINE);
         toolbar.expand(toolbar.getComponentAt(0));
         toolbar.setWidthFull();
@@ -85,6 +93,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     public void beforeEnter(BeforeEnterEvent enter) {
         EventScopedView.resolve(enter, eventService).ifPresent(e -> {
             event = e;
+            publicList.setHref("e/" + event.getSlug());
             refresh();
         });
     }

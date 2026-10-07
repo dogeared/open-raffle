@@ -28,7 +28,11 @@ for Docker.
    participant's (or each other) are rejected.
 4. **QR code** — the app shows (and can download) a QR code per participant. It opens a
    login-free page, identified by an unguessable token, where they rank the prizes they
-   want and leave notes.
+   want.
+   There is also a login-free **public prize list** per event at `/e/<event-name>`, where
+   the name is lowercased with words joined by dashes (`Carnage & Fun 29` →
+   `/e/carnage-fun-29`): the same list participants see, without the picking. The
+   **Public list** button on the Prizes page opens it.
 5. **Draw** — type the drawn ticket number as printed. The winner's preferences appear with a checkbox
    per prize; tick the one they take. Prizes already claimed by earlier winners are struck
    through. Prizes not on their list can be given out too, and new prizes can be added and
@@ -41,8 +45,9 @@ Two Keycloak realm roles control access:
 | `ORGANIZER` | Open the events they are listed on and run them: prizes, participants, reports, draw |
 | `ADMIN` | Everything an organizer can, on every event, plus create, edit, delete and reinstate events and assign organizers |
 
-The public landing page at `/` needs no login; after logging in, organizers pick an event
-and admins see the event list.
+The public landing page at `/`, the participants' wishlist pages at `/p/<token>` and the
+public prize lists at `/e/<event-name>` need no login; after logging in, organizers pick an
+event and admins see the event list.
 
 ## Running locally
 

@@ -3,6 +3,7 @@ package org.openraffle.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -40,6 +41,17 @@ class PrizesViewTest extends KaribuTest {
         navigate("events/" + fair.getId());
         _assertOne(PrizesView.class);
         return fair;
+    }
+
+    @Test
+    void theToolbarLinksToTheEventsPublicPrizeListInANewTab() {
+        openPrizes();
+
+        Anchor publicList = _get(Anchor.class, spec -> spec.withPredicate(a -> a.getHref().startsWith("e/")));
+
+        assertThat(publicList.getHref()).isEqualTo("e/spring-fair");
+        assertThat(publicList.getTarget()).contains("_blank");
+        assertThat(publicList.getElement().getTextRecursively()).contains("Public list");
     }
 
     @Test
