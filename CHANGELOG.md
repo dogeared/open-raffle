@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   share a public link (`Carnage & Fun 29` and `Carnage Fun 29`), so every event's public
   page resolves to exactly one raffle.
 
+### Security
+- Embedded Tomcat 11.0.25 → 11.0.26 (SNYK-JAVA-ORGAPACHETOMCATEMBED-20552494, an
+  authentication bypass in the WebSocket module; the app does not use WebSockets, but the
+  dependency is updated all the same).
+
 ## [1.4.3] - 2026-10-04
 
 ### Fixed

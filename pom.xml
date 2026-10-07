@@ -24,7 +24,7 @@
         <karibu.version>2.7.3</karibu.version>
         <!-- Security fixes ahead of what Spring Boot 4.0.x manages (snyk test); drop these
              overrides once a Boot release manages at least these versions. -->
-        <tomcat.version>11.0.25</tomcat.version>
+        <tomcat.version>11.0.26</tomcat.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
         <logback.version>1.6.3</logback.version>
         <zxing.version>3.5.4</zxing.version>
