@@ -2,6 +2,7 @@ package org.openraffle.ui;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import org.junit.jupiter.api.Test;
 import org.openraffle.domain.Event;
@@ -43,6 +44,23 @@ class PrizeListViewTest extends KaribuTest {
         _assertNone(Button.class, spec -> spec.withText("Add"));
         _assertNone(Button.class, spec -> spec.withText("Save my wishlist"));
         assertThat(_get(AppFooter.class).getElement().getTextRecursively()).contains("dogeared");
+    }
+
+    @Test
+    void prizesWithAPictureShowItBesideTheirName() {
+        Event fair = event("Spring fair", "pat@example.com");
+        Prize bike = prize(fair, "Bike");
+        bike.setImageFile("prize-1-0123456789abcdef.png");
+        prizes.save(bike);
+        prize(fair, "Mug");
+        start();
+
+        navigate("e/spring-fair");
+
+        assertThat(_find(Image.class)).singleElement().satisfies(image -> {
+            assertThat(image.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
+            assertThat(image.getAlt()).contains("Bike");
+        });
     }
 
     @Test

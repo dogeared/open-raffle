@@ -12,7 +12,8 @@ RUN mvn -q -B -Pproduction -DskipTests package
 # ---- Runtime stage ----
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN useradd --system --uid 10001 raffle
+RUN useradd --system --uid 10001 raffle \
+    && mkdir -p /app/data/images && chown -R raffle /app/data
 COPY --from=build /workspace/target/open-raffle-*.jar app.jar
 USER raffle
 EXPOSE 8080

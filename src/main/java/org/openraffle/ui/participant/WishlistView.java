@@ -7,6 +7,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -29,6 +30,7 @@ import org.openraffle.service.ParticipantService;
 import org.openraffle.service.PrizeService;
 import org.openraffle.ui.AppFooter;
 import org.openraffle.ui.Paginator;
+import org.openraffle.ui.PrizeThumbnail;
 import org.openraffle.ui.TicketRangeList;
 import org.openraffle.ui.AppVersion;
 
@@ -195,7 +197,7 @@ public class WishlistView extends VerticalLayout implements BeforeEnterObserver 
         });
         remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
-        HorizontalLayout row = row(rank, prizeLabel(prize), up, down, remove);
+        HorizontalLayout row = withThumbnail(prize, row(rank, prizeLabel(prize), up, down, remove), 1);
         row.addClassNames(LumoUtility.Background.PRIMARY_10);
         return row;
     }
@@ -206,7 +208,16 @@ public class WishlistView extends VerticalLayout implements BeforeEnterObserver 
             changed();
         });
         add.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
-        return row(prizeLabel(prize), add);
+        return withThumbnail(prize, row(prizeLabel(prize), add), 0);
+    }
+
+    /** Puts the prize's picture, when it has one, just before the label at {@code labelIndex}. */
+    private static HorizontalLayout withThumbnail(Prize prize, HorizontalLayout row, int labelIndex) {
+        Image thumbnail = PrizeThumbnail.of(prize, "3rem");
+        if (thumbnail != null) {
+            row.addComponentAtIndex(labelIndex, thumbnail);
+        }
+        return row;
     }
 
     private static Div prizeLabel(Prize prize) {

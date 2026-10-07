@@ -46,6 +46,14 @@ services:
         sync: false
       - key: KEYCLOAK_CLIENT_ID
         value: open-raffle-app
+      # BoardGameGeek API token for the prize editor's game lookup
+      # (register an application at https://boardgamegeek.com/applications). Leave empty
+      # to hide the lookup.
+      - key: BGG_API_KEY
+        sync: false
+      # No disk is attached (it would cost money and end zero-downtime deploys): prize
+      # pictures live in the container's filesystem as a cache and are fetched from BGG
+      # again on first view after a deploy. See the README's roadmap for external storage.
       - key: DB_HOST
         fromDatabase:
           name: open-raffle-db

@@ -44,6 +44,18 @@ public class Prize {
 
     private Instant claimedAt;
 
+    /** BoardGameGeek item this prize is, when the organizer linked one. */
+    private Long bggId;
+
+    /** The BGG item's name at the time it was linked, for display without another API call. */
+    private String bggName;
+
+    /** The BGG id the stored image was fetched for; differs from {@link #bggId} until refreshed. */
+    private Long bggImageId;
+
+    /** Stored image file name (see PrizeImageStore), or null when there is no picture. */
+    private String imageFile;
+
     public Long getId() {
         return id;
     }
@@ -94,6 +106,51 @@ public class Prize {
 
     public void setClaimedAt(Instant claimedAt) {
         this.claimedAt = claimedAt;
+    }
+
+    public Long getBggId() {
+        return bggId;
+    }
+
+    public void setBggId(Long bggId) {
+        this.bggId = bggId;
+    }
+
+    public String getBggName() {
+        return bggName;
+    }
+
+    public void setBggName(String bggName) {
+        this.bggName = bggName;
+    }
+
+    public Long getBggImageId() {
+        return bggImageId;
+    }
+
+    public void setBggImageId(Long bggImageId) {
+        this.bggImageId = bggImageId;
+    }
+
+    public String getImageFile() {
+        return imageFile;
+    }
+
+    public void setImageFile(String imageFile) {
+        this.imageFile = imageFile;
+    }
+
+    public boolean hasImage() {
+        return imageFile != null && !imageFile.isBlank();
+    }
+
+    /** The path the browser loads the picture from, or null without one. */
+    public String getImageUrl() {
+        return hasImage() ? "images/" + imageFile : null;
+    }
+
+    public String getBggUrl() {
+        return bggId == null ? null : "https://boardgamegeek.com/boardgame/" + bggId;
     }
 
     public boolean isClaimed() {
