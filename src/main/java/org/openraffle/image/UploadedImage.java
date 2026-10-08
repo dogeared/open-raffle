@@ -1,12 +1,15 @@
 package org.openraffle.image;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
@@ -20,6 +23,10 @@ import java.util.Set;
  * the size and pixel limits, and it must decode as an image; it is then re-encoded from
  * the decoded pixels, which drops metadata (EXIF, location) and anything else hidden in
  * the file, and shrunk to a sensible size. The original bytes are never stored.
+ * <p>
+ * Memory matters on a small server: an upload is read from a temporary file, never held
+ * whole in memory, and a big photo is decoded at a reduced resolution (every n-th pixel)
+ * rather than at full size before being shrunk.
  */
 public final class UploadedImage {
 
@@ -39,11 +46,36 @@ public final class UploadedImage {
     private UploadedImage() {
     }
 
+    /** For small inputs already in memory (tests, BGG downloads); uploads use {@link #process(Path, String, String)}. */
     public static Processed process(byte[] bytes, String declaredContentType, String fileName) throws InvalidImageException {
         if (bytes == null || bytes.length == 0) {
             throw new InvalidImageException("The file is empty.");
         }
-        if (bytes.length > MAX_BYTES) {
+        try {
+            Path temp = Files.createTempFile("open-raffle-upload-", ".bin");
+            try {
+                Files.write(temp, bytes);
+                return process(temp, declaredContentType, fileName);
+            } finally {
+                Files.deleteIfExists(temp);
+            }
+        } catch (IOException e) {
+            throw new InvalidImageException("The picture could not be read.");
+        }
+    }
+
+    /** Checks and re-encodes the picture in {@code file}, which the caller deletes afterwards. */
+    public static Processed process(Path file, String declaredContentType, String fileName) throws InvalidImageException {
+        long size;
+        try {
+            size = Files.size(file);
+        } catch (IOException e) {
+            throw new InvalidImageException("The file could not be read.");
+        }
+        if (size == 0) {
+            throw new InvalidImageException("The file is empty.");
+        }
+        if (size > MAX_BYTES) {
             throw new InvalidImageException("The file is larger than 10 MB.");
         }
         String extension = extensionOf(fileName);
@@ -54,14 +86,14 @@ public final class UploadedImage {
         if (!declared.isEmpty() && !CONTENT_TYPES.contains(declared)) {
             throw new InvalidImageException("Only JPEG, PNG and GIF pictures can be uploaded (the file says it is " + declared + ").");
         }
-        String signature = signatureOf(bytes);
+        String signature = signatureOf(head(file));
         if (signature == null) {
             throw new InvalidImageException("The file is not a JPEG, PNG or GIF picture.");
         }
         if (!signature.equals(extension.equals("jpeg") ? "jpg" : extension)) {
             throw new InvalidImageException("The file's contents are a " + signature.toUpperCase(Locale.ROOT) + " but its name says ." + extension + ".");
         }
-        BufferedImage image = decode(bytes, signature);
+        BufferedImage image = decode(file, signature);
         BufferedImage shrunk = shrink(image);
         boolean photo = signature.equals("jpg");
         String outExtension = photo ? "jpg" : "png";
@@ -102,8 +134,22 @@ public final class UploadedImage {
         return null;
     }
 
-    private static BufferedImage decode(byte[] bytes, String format) throws InvalidImageException {
-        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+    /** The first bytes of the file, for the signature check. */
+    private static byte[] head(Path file) throws InvalidImageException {
+        try (InputStream in = Files.newInputStream(file)) {
+            return in.readNBytes(16);
+        } catch (IOException e) {
+            throw new InvalidImageException("The file could not be read.");
+        }
+    }
+
+    /**
+     * Decodes from the file. A picture much bigger than {@link #MAX_EDGE} is read with
+     * subsampling (every n-th pixel in each direction), so a 24-megapixel photo costs a few
+     * megabytes of heap instead of a hundred; it is scaled to its final size afterwards.
+     */
+    private static BufferedImage decode(Path file, String format) throws InvalidImageException {
+        try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
             Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(format);
             if (in == null || !readers.hasNext()) {
                 throw new InvalidImageException("The picture could not be read.");
@@ -112,14 +158,21 @@ public final class UploadedImage {
             try {
                 reader.setInput(in, true, true);
                 // Size first, from the header, before any pixels are allocated.
-                long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                long pixels = (long) width * height;
                 if (pixels > MAX_PIXELS) {
                     throw new InvalidImageException("The picture is too large (over 40 megapixels).");
                 }
                 if (pixels <= 0) {
                     throw new InvalidImageException("The picture has no size.");
                 }
-                BufferedImage image = reader.read(0);
+                ImageReadParam param = reader.getDefaultReadParam();
+                int step = subsampling(Math.max(width, height));
+                if (step > 1) {
+                    param.setSourceSubsampling(step, step, 0, 0);
+                }
+                BufferedImage image = reader.read(0, param);
                 if (image == null) {
                     throw new InvalidImageException("The picture could not be read.");
                 }
@@ -130,6 +183,11 @@ public final class UploadedImage {
         } catch (IOException | RuntimeException e) {
             throw new InvalidImageException("The picture could not be read.");
         }
+    }
+
+    /** Every n-th pixel, chosen so the decoded long edge is still at least {@link #MAX_EDGE}. */
+    static int subsampling(int longEdge) {
+        return Math.max(1, longEdge / MAX_EDGE);
     }
 
     private static BufferedImage shrink(BufferedImage image) {

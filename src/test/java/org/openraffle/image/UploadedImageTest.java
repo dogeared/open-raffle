@@ -8,6 +8,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +43,43 @@ class UploadedImageTest {
 
         assertThat(big.width()).isEqualTo(1600);
         assertThat(big.height()).isEqualTo(1200);
+    }
+
+    @Test
+    void hugePhotosAreDecodedSubsampledSoTheyNeverFillTheHeapYetComeOutTheRightSize() throws Exception {
+        // A 24-megapixel phone photo: decoded at every 3rd pixel (2000×1333) and then scaled.
+        assertThat(UploadedImage.subsampling(6000)).isEqualTo(3);
+        assertThat(UploadedImage.subsampling(3199)).isEqualTo(1);
+        assertThat(UploadedImage.subsampling(3200)).isEqualTo(2);
+        assertThat(UploadedImage.subsampling(1600)).isEqualTo(1);
+
+        Path photo = Files.createTempFile("photo", ".jpg");
+        try {
+            Files.write(photo, TestImages.jpeg(6000, 4000));
+            UploadedImage.Processed out = UploadedImage.process(photo, "image/jpeg", "IMG_6000.jpg");
+            assertThat(out.width()).isEqualTo(1600);
+            assertThat(out.height()).isEqualTo(1067);
+            assertThat(UploadedImage.signatureOf(out.bytes())).isEqualTo("jpg");
+        } finally {
+            Files.deleteIfExists(photo);
+        }
+    }
+
+    @Test
+    void anUploadIsReadFromItsTemporaryFileAndTheFileIsLeftForTheCallerToRemove() throws Exception {
+        Path file = Files.createTempFile("upload", ".png");
+        try {
+            Files.write(file, TestImages.png(50, 40));
+            UploadedImage.Processed out = UploadedImage.process(file, "image/png", "box.png");
+            assertThat(out.width()).isEqualTo(50);
+            assertThat(file).exists();
+
+            Files.write(file, new byte[0]);
+            assertThatThrownBy(() -> UploadedImage.process(file, "image/png", "box.png"))
+                    .isInstanceOf(InvalidImageException.class).hasMessageContaining("empty");
+        } finally {
+            Files.deleteIfExists(file);
+        }
     }
 
     @Test

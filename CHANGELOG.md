@@ -5,6 +5,17 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-10-08
+
+### Fixed
+- **Uploading several pictures at once ran the server out of memory** (six phone photos
+  on a 512 MB instance). Uploads are now streamed to temporary files instead of being held
+  in memory, pictures are processed one at a time while the rest of a batch waits its
+  turn, and a big photo is decoded at a reduced resolution (every n-th pixel) rather than
+  at full size before being shrunk, which cuts a 24-megapixel photo's decoding from about
+  100 MB of heap to a few. `raffle.uploads.concurrent` sets how many are processed at once
+  (default 1).
+
 ## [1.7.0] - 2026-10-08
 
 ### Added

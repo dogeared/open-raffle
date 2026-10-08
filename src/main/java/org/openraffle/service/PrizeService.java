@@ -8,6 +8,7 @@ import org.openraffle.domain.PrizePicture;
 import org.openraffle.drive.DriveException;
 import org.openraffle.drive.DriveService;
 import org.openraffle.image.InvalidImageException;
+import org.openraffle.image.UploadGate;
 import org.openraffle.image.UploadRateLimiter;
 import org.openraffle.image.UploadedImage;
 import org.openraffle.repository.PrizePictureRepository;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
@@ -44,9 +46,11 @@ public class PrizeService {
     private final EventService eventService;
     private final CurrentUser currentUser;
     private final UploadRateLimiter uploadLimit;
+    private final UploadGate uploadGate;
 
     public PrizeService(PrizeRepository prizes, PrizePictureRepository pictures, BggClient bgg, PrizeImageStore images,
-                        DriveService drive, EventService eventService, CurrentUser currentUser, UploadRateLimiter uploadLimit) {
+                        DriveService drive, EventService eventService, CurrentUser currentUser, UploadRateLimiter uploadLimit,
+                        UploadGate uploadGate) {
         this.prizes = prizes;
         this.pictures = pictures;
         this.bgg = bgg;
@@ -55,6 +59,7 @@ public class PrizeService {
         this.eventService = eventService;
         this.currentUser = currentUser;
         this.uploadLimit = uploadLimit;
+        this.uploadGate = uploadGate;
     }
 
     /** The event's prizes in alphabetical order; participants rank them themselves. */
@@ -259,6 +264,26 @@ public class PrizeService {
      */
     public PrizePicture addPicture(Prize prize, byte[] upload, String declaredContentType, String fileName)
             throws InvalidImageException, DriveException {
+        try {
+            Path temp = Files.createTempFile("open-raffle-upload-", ".bin");
+            try {
+                Files.write(temp, upload == null ? new byte[0] : upload);
+                return addPicture(prize, temp, declaredContentType, fileName);
+            } finally {
+                Files.deleteIfExists(temp);
+            }
+        } catch (IOException e) {
+            throw new InvalidImageException("The picture could not be read.");
+        }
+    }
+
+    /**
+     * The same, for an upload already streamed to {@code file} (which the caller deletes).
+     * Pictures are processed a few at a time ({@link UploadGate}): the memory-hungry part is
+     * decoding, and a batch of six phone photos at once is more than a small server has.
+     */
+    public PrizePicture addPicture(Prize prize, Path file, String declaredContentType, String fileName)
+            throws InvalidImageException, DriveException {
         Prize current = requireEditable(prize);
         if (current.getPictures().size() >= Prize.MAX_PICTURES) {
             throw new InvalidImageException("A prize can have at most " + Prize.MAX_PICTURES + " pictures.");
@@ -270,26 +295,35 @@ public class PrizeService {
         if (!drive.canUpload()) {
             throw new DriveException("Pictures cannot be uploaded until Google Drive is connected (Settings).");
         }
-        UploadedImage.Processed processed = UploadedImage.process(upload, declaredContentType, fileName);
-        String name;
-        try {
-            name = images.store(current.getId(), processed.bytes(), processed.extension());
-        } catch (IOException e) {
-            throw new InvalidImageException("The picture could not be stored on the server.");
+        if (!uploadGate.enter()) {
+            throw new InvalidImageException("The server is busy with other pictures; please try this one again.");
         }
+        String name;
         String driveFileId;
+        String contentType;
         try {
-            driveFileId = drive.upload(current.getEvent(), name, processed.contentType(), processed.bytes());
-        } catch (DriveException e) {
-            images.delete(name);
-            throw e;
+            UploadedImage.Processed processed = UploadedImage.process(file, declaredContentType, fileName);
+            contentType = processed.contentType();
+            try {
+                name = images.store(current.getId(), processed.bytes(), processed.extension());
+            } catch (IOException e) {
+                throw new InvalidImageException("The picture could not be stored on the server.");
+            }
+            try {
+                driveFileId = drive.upload(current.getEvent(), name, processed.contentType(), processed.bytes());
+            } catch (DriveException e) {
+                images.delete(name);
+                throw e;
+            }
+        } finally {
+            uploadGate.leave();
         }
         PrizePicture picture = new PrizePicture();
         picture.setPrize(current);
         picture.setPosition(current.getPictures().size());
         picture.setFileName(name);
         picture.setDriveFileId(driveFileId);
-        picture.setContentType(processed.contentType());
+        picture.setContentType(contentType);
         picture.setCreatedAt(Instant.now());
         picture.setUploadedBy(user.isEmpty() ? null : user);
         current.getPictures().add(picture);
