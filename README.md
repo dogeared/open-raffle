@@ -287,7 +287,8 @@ checked (max 40 megapixels) before any pixels are allocated, files are capped at
 uploads per 10 minutes, and every picture is re-encoded from its decoded pixels (dropping
 EXIF/location data and anything else hidden in the file, after applying the EXIF
 orientation so portrait photos stay upright) and shrunk to a 1600px long edge; JPEGs are
-decoded with TwelveMonkeys' reader so embedded colour profiles are honoured, and saved at
+decoded with TwelveMonkeys' reader so embedded colour profiles are honoured, PNG profiles
+are applied as well (iPhone HDR photos are tone-mapped to sRGB), and JPEGs are saved at
 quality 0.9. GIFs become still PNGs. Uploads are streamed to temporary files, big photos are decoded at
 a reduced resolution, and pictures are processed one at a time (`raffle.uploads.concurrent`),
 so a batch of phone photos fits in a 512 MB instance. The upload's bytes and name are never stored: files get app-minted
