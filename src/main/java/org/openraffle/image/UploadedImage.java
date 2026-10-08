@@ -34,8 +34,10 @@ import java.util.Set;
  * <p>
  * Colours and orientation survive: JPEGs are decoded with TwelveMonkeys' reader, which
  * applies embedded colour profiles (phone photos are Display P3) the way the camera meant,
- * where the JDK's reader leaves them washed out; the EXIF orientation is read before the
- * metadata is dropped and applied to the pixels, so portrait photos stay upright.
+ * where the JDK's reader leaves them washed out; a PNG's profile is applied by
+ * {@link ColourProfiles}, including the tone-mapping iPhone HDR photos need; and the EXIF
+ * orientation is read before the metadata is dropped and applied to the pixels, so
+ * portrait photos stay upright.
  */
 public final class UploadedImage {
 
@@ -103,8 +105,12 @@ public final class UploadedImage {
             throw new InvalidImageException("The file's contents are a " + signature.toUpperCase(Locale.ROOT) + " but its name says ." + extension + ".");
         }
         boolean photo = signature.equals("jpg");
-        int orientation = photo ? ExifOrientation.of(file) : 1;
+        int orientation = ExifOrientation.of(file);
         BufferedImage image = decode(file, signature);
+        if (signature.equals("png")) {
+            // The JDK's PNG reader hands back raw samples; the profile says what colours they are.
+            image = ColourProfiles.toSrgb(image, ColourProfiles.fromPng(file).orElse(null));
+        }
         BufferedImage shrunk = ExifOrientation.apply(shrink(image), orientation);
         String outExtension = photo ? "jpg" : "png";
         try {

@@ -5,6 +5,15 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-10-08
+
+### Fixed
+- **PNG uploads lost their colour profile**, so iPhone HDR photos (16-bit, Display P3 with
+  the PQ curve) came out flat and washed out. A PNG's embedded profile is now applied:
+  ordinary profiles (Display P3, Adobe RGB) through the colour engine, HDR ones by
+  tone-mapping to sRGB (matched to macOS's own rendition within two percent). The EXIF
+  orientation stored in a PNG is honoured too.
+
 ## [1.7.2] - 2026-10-08
 
 ### Fixed

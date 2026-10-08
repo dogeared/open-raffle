@@ -11,8 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * The EXIF Orientation tag of a JPEG (1 = upright … 8 = rotated), read straight from the
- * file's APP1 segment, and the pixel transform that makes the picture upright. Phones
+ * The EXIF Orientation tag (1 = upright … 8 = rotated), read straight from a JPEG's APP1
+ * segment or a PNG's eXIf chunk, and the pixel transform that makes the picture upright. Phones
  * store portrait photos sideways with this tag set; since the app drops the metadata, the
  * rotation has to be baked into the pixels instead.
  */
@@ -34,6 +34,12 @@ final class ExifOrientation {
 
     static int of(byte[] head) {
         try {
+            if (head.length >= 8 && (head[0] & 0xFF) == 0x89 && head[1] == 'P' && head[2] == 'N' && head[3] == 'G') {
+                // A PNG keeps its EXIF in an eXIf chunk: the TIFF structure, without the "Exif\0\0" prefix.
+                return ColourProfiles.pngChunk(head, "eXIf")
+                        .map(exif -> fromTiff(ByteBuffer.wrap(exif), 0, exif.length))
+                        .orElse(1);
+            }
             ByteBuffer b = ByteBuffer.wrap(head);
             if (b.remaining() < 4 || (b.get(0) & 0xFF) != 0xFF || (b.get(1) & 0xFF) != 0xD8) {
                 return 1;
