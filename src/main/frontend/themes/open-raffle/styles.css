@@ -195,6 +195,19 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .prize-picture-dialog::part(content) {
   text-align: center;
 }
+/* The hover peek is the bare picture: the dialog card is exactly the picture's box. */
+.prize-picture-peek::part(overlay) {
+  padding: 0;
+  border-radius: var(--lumo-border-radius-m);
+  overflow: hidden;
+}
+.prize-picture-peek::part(content) {
+  padding: 0;
+  line-height: 0;
+}
+.prize-picture-peek .prize-picture-frame {
+  display: block;
+}
 
 /* BoardGameGeek's rating square, in BGG's own colours: green from 8, dark green from 7,
    blue from 5, red below. */

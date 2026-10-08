@@ -110,8 +110,11 @@ public final class PrizeThumbnail {
 
         private void open(boolean modal) {
             overPicture = false;
-            dialog = new Dialog(prize.getName());
+            // The peek is just the picture: no header or padding, so the picture's box is
+            // the whole dialog and "on the picture" means "on the dialog".
+            dialog = modal ? new Dialog(prize.getName()) : new Dialog();
             dialog.addClassName("prize-picture-dialog");
+            dialog.addClassName(modal ? "prize-picture-pinned" : "prize-picture-peek");
             dialog.setModal(modal);
             dialog.setCloseOnOutsideClick(true);
             dialog.setCloseOnEsc(true);
