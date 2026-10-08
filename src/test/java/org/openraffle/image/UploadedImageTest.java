@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +36,18 @@ class UploadedImageTest {
         UploadedImage.Processed gif = UploadedImage.process(TestImages.gif(120, 90), "image/gif", "anim.gif");
         assertThat(gif.extension()).isEqualTo("png");
         assertThat(UploadedImage.signatureOf(gif.bytes())).isEqualTo("png");
+    }
+
+    @Test
+    void jpegsAreDecodedByTwelveMonkeysAndSavedAtHighQuality() throws Exception {
+        assertThat(UploadedImage.readerFor("jpg").getClass().getName()).startsWith("com.twelvemonkeys");
+        assertThat(UploadedImage.readerFor("png")).isNotNull();
+
+        // Quality 0.9 writes a noticeably larger file than the JDK default of 0.75 for a photo-like picture.
+        UploadedImage.Processed out = UploadedImage.process(TestImages.noisyJpeg(800, 600), "image/jpeg", "noise.jpg");
+        ByteArrayOutputStream dflt = new ByteArrayOutputStream();
+        ImageIO.write(ImageIO.read(new ByteArrayInputStream(out.bytes())), "jpg", dflt);
+        assertThat(out.bytes().length).isGreaterThan(dflt.size());
     }
 
     @Test

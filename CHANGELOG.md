@@ -5,6 +5,16 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-10-08
+
+### Fixed
+- **Uploaded photos looked washed out.** The JDK's JPEG decoder ignores the colour profile
+  phone photos carry (Display P3) and mangles Adobe and CMYK JPEGs; pictures are now
+  decoded with TwelveMonkeys' JPEG reader, which applies the profile the way the camera
+  meant. Saved JPEGs use quality 0.9 instead of the default 0.75.
+- Portrait photos no longer come out sideways: the EXIF orientation is read before the
+  metadata is dropped and baked into the pixels.
+
 ## [1.7.1] - 2026-10-08
 
 ### Fixed

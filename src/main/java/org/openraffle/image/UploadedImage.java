@@ -1,7 +1,11 @@
 package org.openraffle.image;
 
 import javax.imageio.ImageIO;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Graphics2D;
@@ -27,6 +31,11 @@ import java.util.Set;
  * Memory matters on a small server: an upload is read from a temporary file, never held
  * whole in memory, and a big photo is decoded at a reduced resolution (every n-th pixel)
  * rather than at full size before being shrunk.
+ * <p>
+ * Colours and orientation survive: JPEGs are decoded with TwelveMonkeys' reader, which
+ * applies embedded colour profiles (phone photos are Display P3) the way the camera meant,
+ * where the JDK's reader leaves them washed out; the EXIF orientation is read before the
+ * metadata is dropped and applied to the pixels, so portrait photos stay upright.
  */
 public final class UploadedImage {
 
@@ -93,20 +102,56 @@ public final class UploadedImage {
         if (!signature.equals(extension.equals("jpeg") ? "jpg" : extension)) {
             throw new InvalidImageException("The file's contents are a " + signature.toUpperCase(Locale.ROOT) + " but its name says ." + extension + ".");
         }
-        BufferedImage image = decode(file, signature);
-        BufferedImage shrunk = shrink(image);
         boolean photo = signature.equals("jpg");
+        int orientation = photo ? ExifOrientation.of(file) : 1;
+        BufferedImage image = decode(file, signature);
+        BufferedImage shrunk = ExifOrientation.apply(shrink(image), orientation);
         String outExtension = photo ? "jpg" : "png";
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            BufferedImage toWrite = photo ? withoutAlpha(shrunk) : shrunk;
-            if (!ImageIO.write(toWrite, photo ? "jpg" : "png", out)) {
+            if (photo) {
+                writeJpeg(withoutAlpha(shrunk), out);
+            } else if (!ImageIO.write(shrunk, "png", out)) {
                 throw new InvalidImageException("The picture could not be saved.");
             }
             return new Processed(out.toByteArray(), outExtension, photo ? "image/jpeg" : "image/png", shrunk.getWidth(), shrunk.getHeight());
         } catch (IOException e) {
             throw new InvalidImageException("The picture could not be saved.");
         }
+    }
+
+    /** JPEG quality the pictures are saved at; the default (0.75) visibly softens box art. */
+    static final float JPEG_QUALITY = 0.9f;
+
+    private static void writeJpeg(BufferedImage image, ByteArrayOutputStream out) throws IOException {
+        ImageWriter writer = ImageIO.getImageWritersByFormatName("jpg").next();
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(out)) {
+            writer.setOutput(ios);
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            if (param.canWriteCompressed()) {
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(JPEG_QUALITY);
+            }
+            writer.write(null, new IIOImage(image, null, null), param);
+        } finally {
+            writer.dispose();
+        }
+    }
+
+    /** The reader for the format, preferring TwelveMonkeys' JPEG reader over the JDK's. */
+    static ImageReader readerFor(String format) {
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(format);
+        ImageReader first = null;
+        while (readers.hasNext()) {
+            ImageReader reader = readers.next();
+            if (reader.getClass().getName().startsWith("com.twelvemonkeys")) {
+                return reader;
+            }
+            if (first == null) {
+                first = reader;
+            }
+        }
+        return first;
     }
 
     /** The lower-cased last extension of a file name; "" when it has none. */
@@ -150,11 +195,10 @@ public final class UploadedImage {
      */
     private static BufferedImage decode(Path file, String format) throws InvalidImageException {
         try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
-            Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(format);
-            if (in == null || !readers.hasNext()) {
+            ImageReader reader = readerFor(format);
+            if (in == null || reader == null) {
                 throw new InvalidImageException("The picture could not be read.");
             }
-            ImageReader reader = readers.next();
             try {
                 reader.setInput(in, true, true);
                 // Size first, from the header, before any pixels are allocated.
