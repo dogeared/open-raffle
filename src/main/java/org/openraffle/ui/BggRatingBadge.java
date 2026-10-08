@@ -7,10 +7,11 @@ import org.openraffle.domain.Prize;
 import java.util.Locale;
 
 /**
- * BoardGameGeek's community rating as the coloured square BGG itself shows, in BGG's own
- * scale: one colour per whole number from 10 (bright green) down through greens, light
- * blue (7), purples, pinks and reds to 1, and grey for a game too few people have rated
- * to be ranked. Links to the game's BGG page.
+ * BoardGameGeek's community rating as the coloured square a BGG game page shows: the band
+ * is the whole number of the shown score ("1" … "10", or "unranked" for a game too few
+ * people have rated), and the stylesheet gives each band the colour BGG's game pages use
+ * (deep green for 9–10, green for 8, blue for 7, slate blue for 5–6, reds below, grey when
+ * unranked). Links to the game's BGG page.
  */
 public final class BggRatingBadge {
 

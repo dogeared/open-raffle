@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **BGG rating on the picture.** The full-size picture carries BoardGameGeek's community
-  rating in its lower right corner, coloured on BGG's own scale (one colour per whole
-  number: bright green for 10 down through greens, light blue for 7, purples, pinks and
-  red for 1; grey when too few people have rated the game for it to be ranked) and
-  linking to the game's BGG page. The rating is cached with the prize when the game is
+  rating in its lower right corner, in the colours BGG's own game pages use for their
+  rating box (deep green for 9–10, green for 8, blue for 7, slate blue for 5–6, red for
+  3–4, dark red for 1–2; grey when too few people have rated the game for it to be ranked)
+  and linking to the game's BGG page. The rating is cached with the prize when the game is
   linked and refreshed once it is a month old; ratings move slowly.
 - **Hover to peek.** Resting the pointer on a thumbnail shows the full-size picture, which
   stays up while the pointer is on the thumbnail or on the picture itself and goes away

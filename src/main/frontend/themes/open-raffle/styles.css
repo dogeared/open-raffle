@@ -209,8 +209,10 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   display: block;
 }
 
-/* BoardGameGeek's rating square, in BGG's own scale: one colour per whole number, grey
-   when too few people have rated the game for it to be ranked. */
+/* BoardGameGeek's rating square, in the colours BGG's game pages use for their rating
+   box (its stylesheet's .has-rating-N rules): deep green for 9–10, green for 8, blue for 7,
+   slate blue for 5–6, red for 3–4, dark red for 1–2, grey when too few people have rated
+   the game for it to be ranked. White text, as on BGG. */
 .bgg-rating {
   position: absolute;
   right: var(--lumo-space-s);
@@ -218,26 +220,22 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   min-width: 2.6em;
   padding: 0.35em 0.5em;
   border-radius: var(--lumo-border-radius-m);
-  color: #111;
+  color: #fff;
   font-weight: 700;
   font-size: var(--lumo-font-size-xl);
   line-height: 1;
   text-align: center;
   text-decoration: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
-.bgg-rating:hover { color: #111; filter: brightness(1.05); }
-.bgg-rating-10 { background: #00cc00; }
-.bgg-rating-9  { background: #33cc99; }
-.bgg-rating-8  { background: #66ff99; }
-.bgg-rating-7  { background: #99ffff; }
-.bgg-rating-6  { background: #9999ff; }
-.bgg-rating-5  { background: #cc99ff; }
-.bgg-rating-4  { background: #ff66cc; }
-.bgg-rating-3  { background: #ff6699; }
-.bgg-rating-2  { background: #ff3366; }
-.bgg-rating-1  { background: #ff0000; color: #fff; }
-.bgg-rating-unranked { background: #cccccc; }
+.bgg-rating:hover { color: #fff; filter: brightness(1.1); }
+.bgg-rating-10, .bgg-rating-9 { background: #186b40; }
+.bgg-rating-8 { background: #1d804c; }
+.bgg-rating-7 { background: #1978b3; }
+.bgg-rating-6, .bgg-rating-5 { background: #5369a2; }
+.bgg-rating-4, .bgg-rating-3 { background: #d71925; }
+.bgg-rating-2, .bgg-rating-1 { background: #b2151f; }
+.bgg-rating-unranked { background: #666e75; }
 
 /* "Powered by BGG" under the BoardGameGeek lookup in the prize editor. */
 .bgg-powered-by-link {

@@ -79,7 +79,7 @@ class PrizeListViewTest extends KaribuTest {
         Image large = _get(dialog, Image.class);
         assertThat(large.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
         assertThat(large.getClassNames()).contains("prize-picture-large");
-        // BGG's rating sits on the picture, coloured like BGG colours a 7 (light blue), linking to the game.
+        // BGG's rating sits on the picture, in the band BGG's game page colours blue for a 7, linking to the game.
         Anchor rating = _get(dialog, Anchor.class, spec -> spec.withClasses("bgg-rating"));
         assertThat(rating.getElement().getTextRecursively()).isEqualTo("7.1");
         assertThat(rating.getClassNames()).contains("bgg-rating-7");
@@ -157,7 +157,7 @@ class PrizeListViewTest extends KaribuTest {
         assertThat(BggRatingBadge.tier(9.97, 5000)).isEqualTo("10");  // shows 10.0
         assertThat(BggRatingBadge.tier(8.61406, 5000)).isEqualTo("8");
         assertThat(BggRatingBadge.tier(7.96, 5000)).isEqualTo("8");   // shows 8.0, coloured as an 8
-        assertThat(BggRatingBadge.tier(7.57046, 5000)).isEqualTo("7"); // Dead Cells: light blue
+        assertThat(BggRatingBadge.tier(7.57046, 5000)).isEqualTo("7"); // Dead Cells: BGG's blue
         assertThat(BggRatingBadge.tier(6.2, 5000)).isEqualTo("6");
         assertThat(BggRatingBadge.tier(1.04, 5000)).isEqualTo("1");
         assertThat(BggRatingBadge.tier(8.9, 12)).isEqualTo("unranked"); // too few ratings: grey
