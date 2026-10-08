@@ -279,7 +279,7 @@ public class PrizeService {
         }
         String driveFileId;
         try {
-            driveFileId = drive.upload(name, processed.contentType(), processed.bytes());
+            driveFileId = drive.upload(current.getEvent(), name, processed.contentType(), processed.bytes());
         } catch (DriveException e) {
             images.delete(name);
             throw e;

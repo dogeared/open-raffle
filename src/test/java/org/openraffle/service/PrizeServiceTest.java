@@ -80,6 +80,10 @@ class PrizeServiceTest {
         assertThat(first.getUploadedBy()).isEqualTo("admin@example.com");
         assertThat(images.resolve(first.getFileName())).isPresent();
         assertThat(drive.files).containsKey(first.getDriveFileId()).containsKey(second.getDriveFileId());
+        // Both went into the event's own subfolder of the app's folder.
+        assertThat(drive.fileFolders.get(first.getDriveFileId())).isEqualTo(drive.fileFolders.get(second.getDriveFileId()));
+        assertThat(drive.folders.get(drive.fileFolders.get(first.getDriveFileId()))).isEqualTo(event.getDriveFolderName());
+        assertThat(drive.folderParents.get(drive.fileFolders.get(first.getDriveFileId()))).isEqualTo("folder-1");
         assertThat(drive.fileTypes.get(first.getDriveFileId())).isEqualTo("image/jpeg");
         // What went to Drive is the re-encoded picture, not the upload.
         assertThat(drive.files.get(first.getDriveFileId())).isEqualTo(java.nio.file.Files.readAllBytes(images.resolve(first.getFileName()).orElseThrow()));

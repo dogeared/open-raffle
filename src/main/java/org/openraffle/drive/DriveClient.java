@@ -19,8 +19,8 @@ public interface DriveClient {
 
     String accessToken(String refreshToken) throws DriveException;
 
-    /** Creates a folder in the account's My Drive and returns its id. */
-    String createFolder(String accessToken, String name) throws DriveException;
+    /** Creates a folder (in My Drive, or inside {@code parentId} when given) and returns its id. */
+    String createFolder(String accessToken, String name, String parentId) throws DriveException;
 
     /** The folder's name if it exists and is not in the bin; empty otherwise. */
     Optional<String> folderName(String accessToken, String folderId) throws DriveException;

@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Organizers' own prize pictures, kept in Google Drive.** Under **Settings**, an
   organizer or admin connects a Google Drive folder (OAuth consent; the app creates its own
-  folder and can only see files it created) and can see the connection's state, check it,
-  reconnect or disconnect. Once connected, anyone running an event can upload up to 10
+  folder, with a subfolder per event, and can only see files it created) and can see the
+  connection's state, check it, reconnect or disconnect. Once connected, anyone running an event can upload up to 10
   pictures per prize from the prize editor, order them (the first is the primary picture,
   shown as the thumbnail) and remove them. The large view has a strip of all the prize's
   pictures underneath; resting the pointer on one, or tapping it, shows it large. The
@@ -34,9 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SNYK-JAVA-ORGPOSTGRESQL-20571178).
 
 ### Roadmap
-- One Drive connection for the app with a subfolder per event, and an admin wrap-up for a
-  finished event: ZIP of all its pictures to download, then delete the event and its
-  picture folder (see the README).
+- An admin wrap-up for a finished event: ZIP of all its pictures to download, then delete
+  the event and its picture folder (see the README).
 
 ## [1.6.2] - 2026-10-07
 

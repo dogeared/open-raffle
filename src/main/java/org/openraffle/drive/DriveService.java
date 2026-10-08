@@ -1,6 +1,8 @@
 package org.openraffle.drive;
 
 import org.openraffle.domain.DriveConnection;
+import org.openraffle.domain.Event;
+import org.openraffle.repository.EventRepository;
 import org.openraffle.repository.DriveConnectionRepository;
 import org.openraffle.security.CurrentUser;
 import org.slf4j.Logger;
@@ -28,6 +30,7 @@ public class DriveService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final DriveConnectionRepository connections;
+    private final EventRepository events;
     private final DriveClient drive;
     private final CurrentUser currentUser;
 
@@ -35,8 +38,9 @@ public class DriveService {
     private volatile String accessToken;
     private volatile Instant accessTokenUntil = Instant.EPOCH;
 
-    public DriveService(DriveConnectionRepository connections, DriveClient drive, CurrentUser currentUser) {
+    public DriveService(DriveConnectionRepository connections, EventRepository events, DriveClient drive, CurrentUser currentUser) {
         this.connections = connections;
+        this.events = events;
         this.drive = drive;
         this.currentUser = currentUser;
     }
@@ -87,7 +91,7 @@ public class DriveService {
      */
     public DriveConnection complete(String code, String redirectUri) throws DriveException {
         DriveClient.DriveTokens tokens = drive.exchangeCode(code, redirectUri);
-        String folderId = drive.createFolder(tokens.accessToken(), FOLDER_NAME);
+        String folderId = drive.createFolder(tokens.accessToken(), FOLDER_NAME, null);
         DriveConnection connection = connection().orElseGet(DriveConnection::new);
         connection.setRefreshToken(tokens.refreshToken());
         connection.setAccountEmail(tokens.accountEmail());
@@ -135,11 +139,26 @@ public class DriveService {
         return status();
     }
 
-    /** Puts a picture in the folder and returns its Drive file id. */
-    public String upload(String name, String contentType, byte[] bytes) throws DriveException {
+    /**
+     * Puts a picture in the event's own subfolder of the app's folder and returns its Drive
+     * file id. The subfolder is created on the event's first upload, and again if it has
+     * gone from Drive or the app was reconnected to another account since.
+     */
+    public String upload(Event event, String name, String contentType, byte[] bytes) throws DriveException {
         DriveConnection connection = requireHealthy();
         try {
-            String id = drive.upload(token(connection), connection.getFolderId(), name, contentType, bytes);
+            String token = token(connection);
+            String folder = eventFolder(token, connection, event, false);
+            String id;
+            try {
+                id = drive.upload(token, folder, name, contentType, bytes);
+            } catch (DriveException e) {
+                // The subfolder may have been deleted in Drive by hand: make a new one and try once more.
+                if (drive.folderName(token, folder).isPresent()) {
+                    throw e;
+                }
+                id = drive.upload(token, eventFolder(token, connection, event, true), name, contentType, bytes);
+            }
             connection.setLastCheckedAt(Instant.now());
             connections.save(connection);
             return id;
@@ -148,6 +167,20 @@ public class DriveService {
             connections.save(connection);
             throw e;
         }
+    }
+
+    /** The event's subfolder id, creating the subfolder when there is none (or when {@code recreate}). */
+    private String eventFolder(String token, DriveConnection connection, Event event, boolean recreate) throws DriveException {
+        boolean sameRoot = connection.getFolderId().equals(event.getDriveFolderRoot());
+        if (!recreate && event.getDriveFolderId() != null && sameRoot) {
+            return event.getDriveFolderId();
+        }
+        String id = drive.createFolder(token, event.getDriveFolderName(), connection.getFolderId());
+        event.setDriveFolderId(id);
+        event.setDriveFolderRoot(connection.getFolderId());
+        events.save(event);
+        log.info("Created Drive folder {} for event {}", id, event.getId());
+        return id;
     }
 
     /** The picture's bytes from Drive, empty when it is gone or Drive is unreachable. */

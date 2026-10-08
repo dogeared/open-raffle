@@ -78,8 +78,8 @@ public class SettingsView extends VerticalLayout implements BeforeEnterObserver 
         H3 title = new H3("Google Drive for prize pictures");
         title.addClassNames(LumoUtility.Margin.Top.NONE);
         Paragraph what = new Paragraph("Organizers can upload up to " + Prize.MAX_PICTURES
-                + " pictures per prize once a Google Drive folder is connected. The app creates its own folder in the connected account"
-                + " and can only see files it put there. Until then, prizes show their BoardGameGeek box image.");
+                + " pictures per prize once a Google Drive folder is connected. The app creates its own folder in the connected account,"
+                + " with a subfolder per event, and can only see files it put there. Until then, prizes show their BoardGameGeek box image.");
         what.addClassNames(LumoUtility.TextColor.SECONDARY);
         driveCard.add(title, what);
 

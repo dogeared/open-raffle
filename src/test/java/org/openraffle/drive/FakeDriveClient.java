@@ -12,6 +12,10 @@ public class FakeDriveClient implements DriveClient {
     public boolean failTokens;
     public boolean folderGone;
     public final Map<String, String> folders = new LinkedHashMap<>();
+    /** folder id -> parent folder id (null for a root folder). */
+    public final Map<String, String> folderParents = new LinkedHashMap<>();
+    /** file id -> folder id it was uploaded into. */
+    public final Map<String, String> fileFolders = new LinkedHashMap<>();
     public final Map<String, byte[]> files = new LinkedHashMap<>();
     public final Map<String, String> fileTypes = new LinkedHashMap<>();
     public int tokenRequests;
@@ -23,6 +27,8 @@ public class FakeDriveClient implements DriveClient {
         failTokens = false;
         folderGone = false;
         folders.clear();
+        folderParents.clear();
+        fileFolders.clear();
         files.clear();
         fileTypes.clear();
         tokenRequests = 0;
@@ -57,9 +63,10 @@ public class FakeDriveClient implements DriveClient {
     }
 
     @Override
-    public String createFolder(String accessToken, String name) {
+    public String createFolder(String accessToken, String name, String parentId) {
         String id = "folder-" + (++seq);
         folders.put(id, name);
+        folderParents.put(id, parentId);
         return id;
     }
 
@@ -73,9 +80,13 @@ public class FakeDriveClient implements DriveClient {
         if (failUploads) {
             throw new DriveException("Google Drive did not accept the picture (507 Insufficient Storage: quota exceeded)");
         }
+        if (!folders.containsKey(folderId)) {
+            throw new DriveException("Google Drive did not accept the picture (404 Not Found: File not found: " + folderId + ")");
+        }
         String id = "file-" + (++seq);
         files.put(id, bytes);
         fileTypes.put(id, contentType);
+        fileFolders.put(id, folderId);
         return id;
     }
 

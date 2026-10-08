@@ -37,6 +37,12 @@ public class Event {
 
     private Instant deletedAt;
 
+    /** This event's subfolder in the connected Google Drive, created on its first upload. */
+    private String driveFolderId;
+
+    /** The connection's root folder the subfolder was created in; a reconnect to another account starts over. */
+    private String driveFolderRoot;
+
     /** Lower-cased emails of the organizers allowed to run this event; admins see every event. */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "event_organizer", joinColumns = @JoinColumn(name = "event_id"))
@@ -70,6 +76,27 @@ public class Event {
 
     public void setDeletedAt(Instant deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public String getDriveFolderId() {
+        return driveFolderId;
+    }
+
+    public void setDriveFolderId(String driveFolderId) {
+        this.driveFolderId = driveFolderId;
+    }
+
+    public String getDriveFolderRoot() {
+        return driveFolderRoot;
+    }
+
+    public void setDriveFolderRoot(String driveFolderRoot) {
+        this.driveFolderRoot = driveFolderRoot;
+    }
+
+    /** The subfolder's name in Drive: the event's name, plus its id so two alike names stay apart. */
+    public String getDriveFolderName() {
+        return name + " (#" + id + ")";
     }
 
     public boolean isDeleted() {

@@ -256,8 +256,9 @@ Organizers and admins can upload up to 10 pictures per prize, ordered as they li
 first is the primary one (the thumbnail), and the large view shows a strip of the others
 that swap in on hover or tap. The BoardGameGeek box image, when there is one, comes last.
 Uploads need a Google Drive folder connected under **Settings**: the app keeps the pictures
-there (its own folder, created in the connected account, using the `drive.file` scope so it
-can only see files it created) and caches copies locally. If a cached copy is missing it is
+there (its own folder, created in the connected account, with a subfolder per event named
+after the event, using the `drive.file` scope so it can only see files it created) and
+caches copies locally. If a cached copy is missing it is
 fetched from Drive again; if Drive cannot supply it either, the prize's BoardGameGeek image
 is shown instead. Settings shows the connection's state and lets anyone with access check,
 reconnect or disconnect it; while it is disconnected or unhealthy, uploads are refused and
@@ -292,12 +293,10 @@ remove a prize's pictures, and a prize holds at most 10.
 
 ## Roadmap
 
-- **A folder per event, and an event wrap-up.** The one app-wide Drive connection stays
-  (one OAuth set-up, done once); inside its folder each event gets its own subfolder for
-  that event's pictures. Then an admin-only wrap-up step for a finished event, in this
-  order: build a downloadable ZIP of all the event's pictures, delete the event (soft
-  delete, as today) and delete the event's picture folder from Drive (and the cached
-  copies). The ZIP is offered for download before the pictures go, so nothing is lost.
+- **Event wrap-up.** An admin-only step for a finished event, in this order: build a
+  downloadable ZIP of all the event's pictures, delete the event (soft delete, as today)
+  and delete the event's picture subfolder from Drive (and the cached copies). The ZIP is
+  offered for download before the pictures go, so nothing is lost.
 - **1.8.0 — virus scanning of uploads** (e.g. ClamAV) and image moderation, if the raffles
   grow beyond trusted organizers.
 

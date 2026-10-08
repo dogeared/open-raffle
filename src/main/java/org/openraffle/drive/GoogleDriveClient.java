@@ -110,12 +110,15 @@ public class GoogleDriveClient implements DriveClient {
     }
 
     @Override
-    public String createFolder(String accessToken, String name) throws DriveException {
+    public String createFolder(String accessToken, String name, String parentId) throws DriveException {
         try {
+            Map<String, Object> metadata = parentId == null
+                    ? Map.of("name", name, "mimeType", FOLDER_MIME)
+                    : Map.of("name", name, "mimeType", FOLDER_MIME, "parents", new String[]{parentId});
             ResponseEntity<byte[]> response = http.post().uri(FILES_URL + "?fields=id")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(JSON.writeValueAsString(Map.of("name", name, "mimeType", FOLDER_MIME)))
+                    .body(JSON.writeValueAsString(metadata))
                     .retrieve().onStatus(HttpStatusCode::isError, (req, res) -> { })
                     .toEntity(byte[].class);
             JsonNode node = parse(response, "Could not create the folder in Google Drive");

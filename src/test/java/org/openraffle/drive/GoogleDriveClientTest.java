@@ -89,10 +89,20 @@ class GoogleDriveClientTest {
                 .andRespond(withSuccess("{\"id\":\"f1\",\"name\":\"Open Raffle prize pictures\",\"trashed\":true,\"mimeType\":\"application/vnd.google-apps.folder\"}", MediaType.APPLICATION_JSON));
         server.expect(requestTo(startsWith(GoogleDriveClient.FILES_URL + "/f1"))).andRespond(withStatus(HttpStatus.NOT_FOUND));
 
-        assertThat(client.createFolder("at", "Open Raffle prize pictures")).isEqualTo("f1");
+        assertThat(client.createFolder("at", "Open Raffle prize pictures", null)).isEqualTo("f1");
         assertThat(client.folderName("at", "f1")).contains("Open Raffle prize pictures");
         assertThat(client.folderName("at", "f1")).isEmpty(); // binned
         assertThat(client.folderName("at", "f1")).isEmpty(); // gone
+    }
+
+    @Test
+    void aSubfolderIsCreatedInsideItsParent() throws Exception {
+        server.expect(requestTo(startsWith(GoogleDriveClient.FILES_URL))).andExpect(method(HttpMethod.POST))
+                .andExpect(content().string(containsString("\"parents\":[\"f1\"]")))
+                .andExpect(content().string(containsString("Spring fair (#7)")))
+                .andRespond(withSuccess("{\"id\":\"f2\"}", MediaType.APPLICATION_JSON));
+
+        assertThat(client.createFolder("at", "Spring fair (#7)", "f1")).isEqualTo("f2");
     }
 
     @Test
