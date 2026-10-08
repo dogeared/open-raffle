@@ -13,7 +13,7 @@
 
     <groupId>org.openraffle</groupId>
     <artifactId>open-raffle</artifactId>
-    <version>1.7.1</version>
+    <version>1.7.2</version>
     <name>open-raffle</name>
     <description>Raffle management with physical ticket ranges, QR-code wishlists, and Keycloak OIDC login</description>
 
@@ -26,6 +26,7 @@
              overrides once a Boot release manages at least these versions. -->
         <tomcat.version>11.0.26</tomcat.version>
         <postgresql.version>42.7.14</postgresql.version>
+        <twelvemonkeys.version>3.15.3</twelvemonkeys.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
         <logback.version>1.6.3</logback.version>
         <zxing.version>3.5.4</zxing.version>
@@ -80,9 +81,23 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <!-- JPEG decoding that honours embedded colour profiles (Display P3, Adobe RGB), CMYK and
+                 JPEGs without a JFIF marker; the JDK's own reader washes such pictures out. -->
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>${twelvemonkeys.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
             <version>${zxing.version}</version>
+        </dependency>
+        <dependency>
+            <!-- JPEG decoding that honours embedded colour profiles (Display P3, Adobe RGB), CMYK and
+                 JPEGs without a JFIF marker; the JDK's own reader washes such pictures out. -->
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>${twelvemonkeys.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.zxing</groupId>
