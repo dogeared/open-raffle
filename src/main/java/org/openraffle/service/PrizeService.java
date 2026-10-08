@@ -109,6 +109,7 @@ public class PrizeService {
 
     private static void recordRating(Prize prize, BggThing thing) {
         prize.setBggRating(thing.rating());
+        prize.setBggRatingCount(thing.ratings());
         prize.setBggRatingAt(Instant.now());
     }
 

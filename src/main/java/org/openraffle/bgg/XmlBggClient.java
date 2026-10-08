@@ -120,7 +120,7 @@ public class XmlBggClient implements BggClient {
             Element item = (Element) nodes.item(0);
             String name = primaryName(item);
             return Optional.of(new BggThing(id, name == null ? "BGG #" + id : name, year(item),
-                    text(item, "image"), text(item, "thumbnail"), rating(item)));
+                    text(item, "image"), text(item, "thumbnail"), rating(item), ratingCount(item)));
         });
     }
 
@@ -245,6 +245,19 @@ public class XmlBggClient implements BggClient {
                 } catch (NumberFormatException e) {
                     return null;
                 }
+            }
+        }
+        return null;
+    }
+
+    /** How many people rated it: {@code <statistics><ratings><usersrated value=…/>}. */
+    private static Integer ratingCount(Element item) {
+        NodeList counts = item.getElementsByTagName("usersrated");
+        for (int i = 0; i < counts.getLength(); i++) {
+            Element count = (Element) counts.item(i);
+            if (count.getParentNode() != null && "ratings".equals(count.getParentNode().getNodeName())) {
+                Long value = parseLong(count.getAttribute("value"));
+                return value == null ? null : value.intValue();
             }
         }
         return null;

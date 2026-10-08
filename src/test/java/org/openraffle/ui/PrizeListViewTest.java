@@ -57,6 +57,7 @@ class PrizeListViewTest extends KaribuTest {
         bike.setImageFile("prize-1-0123456789abcdef.png");
         bike.setBggId(13L);
         bike.setBggRating(7.09005);
+        bike.setBggRatingCount(144735);
         prizes.save(bike);
         prize(fair, "Mug");
         start();
@@ -78,10 +79,11 @@ class PrizeListViewTest extends KaribuTest {
         Image large = _get(dialog, Image.class);
         assertThat(large.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
         assertThat(large.getClassNames()).contains("prize-picture-large");
-        // BGG's rating sits on the picture, coloured like BGG colours a 7.x, linking to the game.
+        // BGG's rating sits on the picture, coloured like BGG colours a 7 (light blue), linking to the game.
         Anchor rating = _get(dialog, Anchor.class, spec -> spec.withClasses("bgg-rating"));
         assertThat(rating.getElement().getTextRecursively()).isEqualTo("7.1");
-        assertThat(rating.getClassNames()).contains("bgg-rating-good");
+        assertThat(rating.getClassNames()).contains("bgg-rating-7");
+        assertThat(rating.getElement().getAttribute("title")).isEqualTo("BoardGameGeek community rating 7.1 of 10 from 144735 ratings");
         assertThat(rating.getHref()).isEqualTo("https://boardgamegeek.com/boardgame/13");
         _click(_get(dialog, Button.class, spec -> spec.withText("Close")));
         assertThat(dialog.isOpened()).isFalse();
@@ -151,11 +153,15 @@ class PrizeListViewTest extends KaribuTest {
     }
 
     @Test
-    void ratingColoursFollowBggsBands() {
-        assertThat(BggRatingBadge.tier(8.0)).isEqualTo("great");
-        assertThat(BggRatingBadge.tier(7.95)).isEqualTo("good");
-        assertThat(BggRatingBadge.tier(6.2)).isEqualTo("ok");
-        assertThat(BggRatingBadge.tier(4.99)).isEqualTo("poor");
+    void ratingColoursFollowBggsScale() {
+        assertThat(BggRatingBadge.tier(9.97, 5000)).isEqualTo("10");  // shows 10.0
+        assertThat(BggRatingBadge.tier(8.61406, 5000)).isEqualTo("8");
+        assertThat(BggRatingBadge.tier(7.96, 5000)).isEqualTo("8");   // shows 8.0, coloured as an 8
+        assertThat(BggRatingBadge.tier(7.57046, 5000)).isEqualTo("7"); // Dead Cells: light blue
+        assertThat(BggRatingBadge.tier(6.2, 5000)).isEqualTo("6");
+        assertThat(BggRatingBadge.tier(1.04, 5000)).isEqualTo("1");
+        assertThat(BggRatingBadge.tier(8.9, 12)).isEqualTo("unranked"); // too few ratings: grey
+        assertThat(BggRatingBadge.tier(8.9, null)).isEqualTo("8");      // count unknown: trust the score
         assertThat(BggRatingBadge.format(7.09005)).isEqualTo("7.1");
         Prize unrated = new Prize();
         unrated.setBggId(13L);

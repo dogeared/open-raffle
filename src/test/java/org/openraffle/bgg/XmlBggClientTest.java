@@ -80,7 +80,7 @@ class XmlBggClientTest {
         Optional<BggThing> thing = client.thing(13);
 
         assertThat(thing).contains(new BggThing(13, "CATAN", 1995,
-                "https://cf.geekdo-images.com/image.jpg", "https://cf.geekdo-images.com/thumb.jpg", 7.09005));
+                "https://cf.geekdo-images.com/image.jpg", "https://cf.geekdo-images.com/thumb.jpg", 7.09005, 144735));
     }
 
     @Test

@@ -59,8 +59,11 @@ public class Prize {
     /** BGG's community average rating (1–10) as last fetched; ratings move slowly, so it is cached here. */
     private Double bggRating;
 
-    /** When {@link #bggRating} was fetched; refreshed on save once it is older than a month. */
+    /** When {@link #bggRating} was fetched; refreshed once it is older than a month. */
     private Instant bggRatingAt;
+
+    /** How many people rated it on BGG; a handful means BGG shows the score in grey, unranked. */
+    private Integer bggRatingCount;
 
     public Long getId() {
         return id;
@@ -152,6 +155,14 @@ public class Prize {
 
     public void setBggRating(Double bggRating) {
         this.bggRating = bggRating;
+    }
+
+    public Integer getBggRatingCount() {
+        return bggRatingCount;
+    }
+
+    public void setBggRatingCount(Integer bggRatingCount) {
+        this.bggRatingCount = bggRatingCount;
     }
 
     public Instant getBggRatingAt() {

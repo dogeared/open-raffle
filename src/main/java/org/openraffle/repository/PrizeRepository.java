@@ -23,8 +23,11 @@ public interface PrizeRepository extends JpaRepository<Prize, Long> {
 
     Optional<Prize> findByImageFile(String imageFile);
 
-    /** Linked prizes whose BGG rating has never been fetched or was fetched before {@code before}. */
-    @Query("select p from Prize p where p.bggId is not null and (p.bggRatingAt is null or p.bggRatingAt < :before)")
+    /**
+     * Linked prizes whose BGG rating has never been fetched, was fetched before {@code before},
+     * or predates the rating count (so the count gets filled in once).
+     */
+    @Query("select p from Prize p where p.bggId is not null and (p.bggRatingAt is null or p.bggRatingAt < :before or p.bggRatingCount is null)")
     List<Prize> findAllWithStaleRating(@Param("before") Instant before);
 
     long countByEventIsNull();

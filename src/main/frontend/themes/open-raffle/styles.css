@@ -209,8 +209,8 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   display: block;
 }
 
-/* BoardGameGeek's rating square, in BGG's own colours: green from 8, dark green from 7,
-   blue from 5, red below. */
+/* BoardGameGeek's rating square, in BGG's own scale: one colour per whole number, grey
+   when too few people have rated the game for it to be ranked. */
 .bgg-rating {
   position: absolute;
   right: var(--lumo-space-s);
@@ -218,19 +218,26 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   min-width: 2.6em;
   padding: 0.35em 0.5em;
   border-radius: var(--lumo-border-radius-m);
-  color: #fff;
+  color: #111;
   font-weight: 700;
   font-size: var(--lumo-font-size-xl);
   line-height: 1;
   text-align: center;
   text-decoration: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
-.bgg-rating:hover { color: #fff; filter: brightness(1.1); }
-.bgg-rating-great { background: #2fc482; }
-.bgg-rating-good  { background: #1d804c; }
-.bgg-rating-ok    { background: #5369a2; }
-.bgg-rating-poor  { background: #df4751; }
+.bgg-rating:hover { color: #111; filter: brightness(1.05); }
+.bgg-rating-10 { background: #00cc00; }
+.bgg-rating-9  { background: #33cc99; }
+.bgg-rating-8  { background: #66ff99; }
+.bgg-rating-7  { background: #99ffff; }
+.bgg-rating-6  { background: #9999ff; }
+.bgg-rating-5  { background: #cc99ff; }
+.bgg-rating-4  { background: #ff66cc; }
+.bgg-rating-3  { background: #ff6699; }
+.bgg-rating-2  { background: #ff3366; }
+.bgg-rating-1  { background: #ff0000; color: #fff; }
+.bgg-rating-unranked { background: #cccccc; }
 
 /* "Powered by BGG" under the BoardGameGeek lookup in the prize editor. */
 .bgg-powered-by-link {
