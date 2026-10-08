@@ -3,6 +3,7 @@ package org.openraffle.ui;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -107,6 +108,16 @@ class PrizeListViewTest extends KaribuTest {
         leave(thumbnail);
         assertThat(peek.isOpened()).isFalse();
 
+        // The picture opens over the thumbnail: the pointer "leaves" the thumbnail for the picture,
+        // and the peek must stay until it leaves the picture itself.
+        hover(thumbnail);
+        Dialog covering = _get(Dialog.class, spec -> spec.withPredicate(Dialog::isOpened));
+        _fireDomEvent(frame(covering), "mouseenter", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+        leave(thumbnail);
+        assertThat(covering.isOpened()).isTrue();
+        _fireDomEvent(frame(covering), "mouseleave", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+        assertThat(covering.isOpened()).isFalse();
+
         // Hover then click: the peek gives way to the pinned, modal dialog, which a leave does not close.
         hover(thumbnail);
         _click(thumbnail);
@@ -123,8 +134,15 @@ class PrizeListViewTest extends KaribuTest {
         _fireDomEvent(thumbnail, "mouseenter", data);
     }
 
+    /** The thumbnail's mouseleave is debounced as well. */
     private static void leave(Image thumbnail) {
-        _fireDomEvent(thumbnail, "mouseleave", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+        var data = tools.jackson.databind.json.JsonMapper.shared().createObjectNode();
+        data.put(com.vaadin.flow.shared.JsonConstants.EVENT_DATA_PHASE, com.vaadin.flow.dom.DebouncePhase.TRAILING.getIdentifier());
+        _fireDomEvent(thumbnail, "mouseleave", data);
+    }
+
+    private static Div frame(Dialog dialog) {
+        return _get(dialog, Div.class, spec -> spec.withClasses("prize-picture-frame"));
     }
 
     @Test

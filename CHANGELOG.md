@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   green from 7, blue from 5, red below) and linking to the game's BGG page. The rating is
   cached with the prize when the game is linked and refreshed on a save once it is a month
   old; ratings move slowly.
-- **Hover to peek.** Resting the pointer on a thumbnail shows the full-size picture until
-  the pointer leaves; clicking keeps it open with a Close button, as before.
+- **Hover to peek.** Resting the pointer on a thumbnail shows the full-size picture, which
+  stays up while the pointer is on the thumbnail or on the picture itself and goes away
+  when it leaves; clicking keeps it open with a Close button, as before.
 
 ### Changed
 - Thumbnails on the organizer's prizes grid are the same size as on the public prize list.

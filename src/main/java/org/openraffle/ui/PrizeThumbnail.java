@@ -9,7 +9,8 @@ import org.openraffle.domain.Prize;
 
 /**
  * A prize's stored picture as a small square, for grid rows and list rows. Hovering shows
- * the full-size picture while the pointer stays; clicking opens it to stay until closed.
+ * the full-size picture, which stays while the pointer is on the thumbnail or on the picture
+ * itself; clicking opens it to stay until closed.
  * Both carry BGG's rating in the lower right corner, when the prize is linked to a game.
  */
 public final class PrizeThumbnail {
@@ -37,21 +38,42 @@ public final class PrizeThumbnail {
         Preview preview = new Preview(prize);
         image.addClickListener(e -> preview.pin());
         image.getElement().addEventListener("mouseenter", e -> preview.peek()).debounce(HOVER_DELAY_MS);
-        image.getElement().addEventListener("mouseleave", e -> preview.unpeek());
+        // The picture opens centred and often right over the thumbnail, which then sees a
+        // mouseleave at once; so leaving the thumbnail only closes the peek if the pointer
+        // has not landed on the picture in the meantime.
+        image.getElement().addEventListener("mouseleave", e -> preview.leftThumbnail())
+                .setFilter(POINTER_NOT_ON_PICTURE)
+                .debounce(LEAVE_GRACE_MS);
         return image;
     }
 
-    /** One thumbnail's large picture: shown lightly on hover, kept open on click. */
+    /**
+     * Client-side check run when the pointer leaves a thumbnail: true unless the pointer is
+     * inside a full-size picture's box. A picture that opens over the thumbnail makes the
+     * browser report a leave without any movement, and that leave must not close it.
+     */
+    static final String POINTER_NOT_ON_PICTURE = "![...document.querySelectorAll('.prize-picture-frame')].some(f => {"
+            + " const r = f.getBoundingClientRect();"
+            + " return event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom; })";
+
+    /** Leaving the thumbnail waits this long for the pointer to arrive on the picture. */
+    static final int LEAVE_GRACE_MS = 300;
+
+    /**
+     * One thumbnail's large picture: shown lightly on hover and kept while the pointer is on
+     * the thumbnail or the picture itself; kept open on click until closed.
+     */
     static final class Preview {
         private final Prize prize;
         private Dialog dialog;
         private boolean pinned;
+        private boolean overPicture;
 
         Preview(Prize prize) {
             this.prize = prize;
         }
 
-        /** Hover: a non-modal glimpse that goes away when the pointer leaves the thumbnail. */
+        /** Hover: a non-modal glimpse. Stays while the pointer rests on the thumbnail or the picture. */
         void peek() {
             if (dialog != null && dialog.isOpened()) {
                 return;
@@ -60,7 +82,18 @@ public final class PrizeThumbnail {
             open(false);
         }
 
-        void unpeek() {
+        void leftThumbnail() {
+            if (!pinned && !overPicture && dialog != null) {
+                dialog.close();
+            }
+        }
+
+        void enteredPicture() {
+            overPicture = true;
+        }
+
+        void leftPicture() {
+            overPicture = false;
             if (!pinned && dialog != null) {
                 dialog.close();
             }
@@ -76,12 +109,16 @@ public final class PrizeThumbnail {
         }
 
         private void open(boolean modal) {
+            overPicture = false;
             dialog = new Dialog(prize.getName());
             dialog.addClassName("prize-picture-dialog");
             dialog.setModal(modal);
             dialog.setCloseOnOutsideClick(true);
             dialog.setCloseOnEsc(true);
-            dialog.add(picture(prize));
+            Div frame = picture(prize);
+            frame.getElement().addEventListener("mouseenter", e -> enteredPicture());
+            frame.getElement().addEventListener("mouseleave", e -> leftPicture());
+            dialog.add(frame);
             if (modal) {
                 dialog.getFooter().add(new Button("Close", e -> dialog.close()));
             }
