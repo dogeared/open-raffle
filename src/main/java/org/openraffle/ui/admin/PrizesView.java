@@ -106,9 +106,9 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         grid.addColumn(prize -> pages.getPage() * pages.getPageSize() + currentPage.indexOf(prize) + 1)
                 .setHeader("#").setKey("number").setWidth("4em").setFlexGrow(0);
         Grid.Column<Prize> picture = grid.addComponentColumn(prize -> {
-            Image thumbnail = PrizeThumbnail.of(prize, "2.5rem");
+            Image thumbnail = PrizeThumbnail.of(prize, "3rem");
             return thumbnail == null ? new Span() : thumbnail;
-        }).setHeader("").setKey("picture").setWidth("3.5em").setFlexGrow(0);
+        }).setHeader("").setKey("picture").setWidth("4em").setFlexGrow(0);
         grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         Grid.Column<Prize> description = grid.addColumn(Prize::getDescription)
                 .setHeader("Description").setKey("description").setWidth("8em").setFlexGrow(3);
@@ -181,6 +181,18 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         return game;
     }
 
+    /** BGG's API terms ask for their badge wherever their data is used; it sits under the lookup. */
+    static Anchor poweredByBgg() {
+        Image badge = new Image("img/bgg-powered-by.png", "Powered by BoardGameGeek");
+        badge.setHeight("1.75rem");
+        badge.addClassName("bgg-powered-by");
+        Anchor link = new Anchor("https://boardgamegeek.com", badge);
+        link.setTarget("_blank");
+        link.getElement().setAttribute("title", "Game data and images from BoardGameGeek");
+        link.addClassName("bgg-powered-by-link");
+        return link;
+    }
+
     private Prize newPrize() {
         Prize prize = new Prize();
         prize.setEvent(event);
@@ -214,7 +226,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
                 });
         binder.readBean(prize);
 
-        FormLayout form = new FormLayout(game, name, description);
+        FormLayout form = new FormLayout(game, poweredByBgg(), name, description);
         form.setColspan(game, 2);
         form.setColspan(name, 2);
         form.setColspan(description, 2);

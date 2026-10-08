@@ -229,6 +229,11 @@ typing in the **BoardGameGeek** field and pick the game, like the search box on 
 Picking one fills in the prize name (if empty), stores the BGG id with the prize and
 downloads the game's box image once into `RAFFLE_IMAGES_DIR`; the picture then shows on the
 prizes grid, the public prize list and participants' wishlists without further API calls.
+Hover or click a thumbnail for the full-size picture, which carries BGG's community rating
+in BGG's colours. Ratings are cached with the prize and refreshed by a background job a few
+times a day once they are a month old (or were never fetched); `raffle.bgg.refresh=false`
+turns the job off. BGG's terms require their "Powered by BGG" badge wherever their data is
+used; it ships with the app (`img/bgg-powered-by.png`) and sits under the lookup field.
 Unlinking the game removes the picture.
 
 BGG's XML API requires a registered application and a bearer token:

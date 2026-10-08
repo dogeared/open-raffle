@@ -176,7 +176,13 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .prize-thumbnail {
   cursor: pointer;
 }
-/* The full-size picture dialog: as big as the window allows, box art proportions kept. */
+/* The full-size picture dialog: as big as the window allows, box art proportions kept.
+   The frame hugs the picture so the rating badge sits on the picture's own corner. */
+.prize-picture-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
 .prize-picture-large {
   display: block;
   max-width: min(90vw, 900px);
@@ -185,4 +191,55 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   height: auto;
   object-fit: contain;
   margin: 0 auto;
+}
+.prize-picture-dialog::part(content) {
+  text-align: center;
+}
+/* The hover peek is the bare picture: the dialog card is exactly the picture's box. */
+.prize-picture-peek::part(overlay) {
+  padding: 0;
+  border-radius: var(--lumo-border-radius-m);
+  overflow: hidden;
+}
+.prize-picture-peek::part(content) {
+  padding: 0;
+  line-height: 0;
+}
+.prize-picture-peek .prize-picture-frame {
+  display: block;
+}
+
+/* BoardGameGeek's rating square, in the colours BGG's game pages use for their rating
+   box (its stylesheet's .has-rating-N rules): deep green for 9–10, green for 8, blue for 7,
+   slate blue for 5–6, red for 3–4, dark red for 1–2, grey when too few people have rated
+   the game for it to be ranked. White text, as on BGG. */
+.bgg-rating {
+  position: absolute;
+  right: var(--lumo-space-s);
+  bottom: var(--lumo-space-s);
+  min-width: 2.6em;
+  padding: 0.35em 0.5em;
+  border-radius: var(--lumo-border-radius-m);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--lumo-font-size-xl);
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.bgg-rating:hover { color: #fff; filter: brightness(1.1); }
+.bgg-rating-10, .bgg-rating-9 { background: #186b40; }
+.bgg-rating-8 { background: #1d804c; }
+.bgg-rating-7 { background: #1978b3; }
+.bgg-rating-6, .bgg-rating-5 { background: #5369a2; }
+.bgg-rating-4, .bgg-rating-3 { background: #d71925; }
+.bgg-rating-2, .bgg-rating-1 { background: #b2151f; }
+.bgg-rating-unranked { background: #666e75; }
+
+/* "Powered by BGG" under the BoardGameGeek lookup in the prize editor. */
+.bgg-powered-by-link {
+  display: inline-block;
+  margin-top: calc(-1 * var(--lumo-space-s));
+  line-height: 0;
 }

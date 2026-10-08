@@ -39,6 +39,7 @@ class XmlBggClientTest {
                 <name type="primary" sortindex="1" value="CATAN"/>
                 <yearpublished value="1995"/>
                 <link type="boardgamedesigner" id="11" value="Klaus Teuber"/>
+                <statistics page="1"><ratings><usersrated value="144735"/><average value="7.09005"/><bayesaverage value="6.90163"/></ratings></statistics>
               </item>
             </items>
             """;
@@ -72,14 +73,14 @@ class XmlBggClientTest {
 
     @Test
     void thingReadsThePrimaryNameYearAndImages() {
-        server.expect(requestTo("https://boardgamegeek.com/xmlapi2/thing?id=13"))
+        server.expect(requestTo("https://boardgamegeek.com/xmlapi2/thing?id=13&stats=1"))
                 .andRespond(withSuccess(THING_XML, MediaType.APPLICATION_XML));
         XmlBggClient client = new XmlBggClient(builder, "t");
 
         Optional<BggThing> thing = client.thing(13);
 
         assertThat(thing).contains(new BggThing(13, "CATAN", 1995,
-                "https://cf.geekdo-images.com/image.jpg", "https://cf.geekdo-images.com/thumb.jpg"));
+                "https://cf.geekdo-images.com/image.jpg", "https://cf.geekdo-images.com/thumb.jpg", 7.09005, 144735));
     }
 
     @Test

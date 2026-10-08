@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.nio.file.Path;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
@@ -70,8 +72,45 @@ public class PrizeService {
         } else if (!saved.getBggId().equals(saved.getBggImageId())) {
             fetchImage(saved);
             saved = prizes.save(saved);
+        } else if (ratingIsStale(saved)) {
+            Prize linked = saved;
+            bgg.thing(linked.getBggId()).ifPresent(thing -> recordRating(linked, thing));
+            saved = prizes.save(linked);
         }
         return saved;
+    }
+
+    /** How long a cached BGG rating is trusted before it is refreshed. */
+    public static final Duration RATING_MAX_AGE = Duration.ofDays(30);
+
+    /** Linked prizes whose rating was never fetched (linked before ratings existed, or BGG was down) or is a month old. */
+    @Transactional(readOnly = true)
+    public List<Prize> findWithStaleRating() {
+        return prizes.findAllWithStaleRating(Instant.now().minus(RATING_MAX_AGE));
+    }
+
+    /** Fetches the prize's BGG rating now. Returns false when BGG did not answer. */
+    public boolean refreshRating(Prize prize) {
+        if (prize.getBggId() == null) {
+            return false;
+        }
+        Optional<BggThing> thing = bgg.thing(prize.getBggId());
+        if (thing.isEmpty()) {
+            return false;
+        }
+        recordRating(prize, thing.get());
+        prizes.save(prize);
+        return true;
+    }
+
+    private static boolean ratingIsStale(Prize prize) {
+        return prize.getBggRatingAt() == null || prize.getBggRatingAt().isBefore(Instant.now().minus(RATING_MAX_AGE));
+    }
+
+    private static void recordRating(Prize prize, BggThing thing) {
+        prize.setBggRating(thing.rating());
+        prize.setBggRatingCount(thing.ratings());
+        prize.setBggRatingAt(Instant.now());
     }
 
     private void fetchImage(Prize prize) {
@@ -84,6 +123,7 @@ public class PrizeService {
         if (prize.getBggName() == null || prize.getBggName().isBlank()) {
             prize.setBggName(thing.get().name());
         }
+        recordRating(prize, thing.get());
         String previous = prize.getImageFile();
         Optional<BggImage> image = downloadArt(thing.get());
         if (image.isEmpty()) {

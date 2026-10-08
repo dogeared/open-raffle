@@ -121,6 +121,18 @@ class PrizesViewTest extends KaribuTest {
     }
 
     @Test
+    void theEditorCarriesBggsPoweredByBadgeUnderTheLookup() {
+        openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+
+        Image badge = _get(Image.class, spec -> spec.withPredicate(i -> i.getAlt().orElse("").contains("Powered by BoardGameGeek")));
+        assertThat(badge.getSrc()).isEqualTo("img/bgg-powered-by.png");
+        Anchor link = (Anchor) badge.getParent().orElseThrow();
+        assertThat(link.getHref()).isEqualTo("https://boardgamegeek.com");
+        assertThat(link.getTarget()).contains("_blank");
+    }
+
+    @Test
     void prizesAreAddedEditedAndListedAlphabetically() {
         Event fair = openPrizes();
         prize(fair, "mug");

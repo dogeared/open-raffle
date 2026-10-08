@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,13 @@ public interface PrizeRepository extends JpaRepository<Prize, Long> {
     List<Prize> findAllByEventAndClaimedByIsNotNullOrderByClaimedAtDesc(Event event);
 
     Optional<Prize> findByImageFile(String imageFile);
+
+    /**
+     * Linked prizes whose BGG rating has never been fetched, was fetched before {@code before},
+     * or predates the rating count (so the count gets filled in once).
+     */
+    @Query("select p from Prize p where p.bggId is not null and (p.bggRatingAt is null or p.bggRatingAt < :before or p.bggRatingCount is null)")
+    List<Prize> findAllWithStaleRating(@Param("before") Instant before);
 
     long countByEventIsNull();
 

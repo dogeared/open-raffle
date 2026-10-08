@@ -30,6 +30,9 @@ class PrizeServiceTest {
     @Autowired
     TestEntityManager em;
 
+    @Autowired
+    org.openraffle.repository.PrizeRepository prizes;
+
     private Event event;
 
     @BeforeEach
@@ -130,6 +133,69 @@ class PrizeServiceTest {
 
         assertThat(saved.hasImage()).isTrue();
         assertThat(bgg.downloads).containsExactly(FakeBggClient.imageUrl(13), FakeBggClient.imageUrl(13) + "?thumb");
+    }
+
+    @Test
+    void theBggRatingIsCachedOnLinkAndRefreshedOnlyOnceItIsAMonthOld() {
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+        Prize saved = prizeService.save(prize);
+        assertThat(saved.getBggRating()).isEqualTo(7.09005);
+        assertThat(saved.getBggRatingCount()).isEqualTo(1000);
+        assertThat(saved.getBggRatingAt()).isNotNull();
+
+        // Fresh enough: a plain save leaves it alone even though BGG now says otherwise.
+        bgg.ratings.put(13L, 8.5);
+        saved.setDescription("Red");
+        saved = prizeService.save(saved);
+        assertThat(saved.getBggRating()).isEqualTo(7.09005);
+
+        // A month on, the next save refreshes it.
+        saved.setBggRatingAt(java.time.Instant.now().minus(PrizeService.RATING_MAX_AGE).minusSeconds(60));
+        saved = prizeService.save(saved);
+        assertThat(saved.getBggRating()).isEqualTo(8.5);
+        assertThat(bgg.downloads).hasSize(1); // the picture was not fetched again
+    }
+
+    @Test
+    void theBackgroundRefresherFillsInRatingsThatWereNeverFetchedAndOldOnes() {
+        Prize neverFetched = prize("Dead Cells");
+        neverFetched.setBggId(13L);
+        neverFetched.setBggImageId(13L); // linked before ratings existed: no rating, no fetch date
+        neverFetched = prizes.save(neverFetched);
+        Prize old = prize("Carcassonne");
+        old.setBggId(822L);
+        old.setBggImageId(822L);
+        old.setBggRating(6.0);
+        old.setBggRatingCount(1000);
+        old.setBggRatingAt(java.time.Instant.now().minus(PrizeService.RATING_MAX_AGE).minusSeconds(60));
+        old = prizes.save(old);
+        Prize fresh = prize("Seafarers");
+        fresh.setBggId(2655L);
+        fresh.setBggImageId(2655L);
+        fresh.setBggRating(5.0);
+        fresh.setBggRatingCount(1000);
+        fresh.setBggRatingAt(java.time.Instant.now());
+        fresh = prizes.save(fresh);
+        prize("Mug"); // not linked at all
+
+        Prize noCount = prize("Dominion");
+        noCount.setBggId(2655L);
+        noCount.setBggImageId(2655L);
+        noCount.setBggRating(7.0);
+        noCount.setBggRatingAt(java.time.Instant.now());
+        noCount = prizes.save(noCount);
+
+        assertThat(prizeService.findWithStaleRating()).containsExactlyInAnyOrder(neverFetched, old, noCount);
+
+        new PrizeRatingRefresher(prizeService, bgg, 0).refreshStaleRatings();
+
+        assertThat(prizes.findById(neverFetched.getId()).orElseThrow().getBggRating()).isEqualTo(7.09005);
+        assertThat(prizes.findById(old.getId()).orElseThrow().getBggRating()).isEqualTo(7.4);
+        assertThat(prizes.findById(fresh.getId()).orElseThrow().getBggRating()).isEqualTo(5.0);
+        assertThat(prizes.findById(noCount.getId()).orElseThrow().getBggRatingCount()).isEqualTo(1000);
+        assertThat(prizeService.findWithStaleRating()).isEmpty();
+        assertThat(bgg.downloads).isEmpty(); // ratings only; no pictures fetched
     }
 
     @Test

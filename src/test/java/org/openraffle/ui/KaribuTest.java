@@ -63,6 +63,7 @@ import java.util.Set;
         "spring.autoconfigure.exclude=org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration,org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration",
         "vaadin.launch-browser=false",
         "raffle.images-dir=target/test-images",
+        "raffle.bgg.refresh=false",
 })
 @AutoConfigureTestDatabase
 @Import({KaribuTest.StubOidcClient.class, FakeBgg.class})
