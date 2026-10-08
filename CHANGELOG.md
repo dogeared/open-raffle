@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PostgreSQL JDBC driver 42.7.13 → 42.7.14 (SNYK-JAVA-ORGPOSTGRESQL-20571163,
   SNYK-JAVA-ORGPOSTGRESQL-20571178).
 
+### Roadmap
+- One Drive connection for the app with a subfolder per event, and an admin wrap-up for a
+  finished event: ZIP of all its pictures to download, then delete the event and its
+  picture folder (see the README).
+
 ## [1.6.2] - 2026-10-07
 
 ### Added

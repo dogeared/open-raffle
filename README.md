@@ -292,6 +292,12 @@ remove a prize's pictures, and a prize holds at most 10.
 
 ## Roadmap
 
+- **A folder per event, and an event wrap-up.** The one app-wide Drive connection stays
+  (one OAuth set-up, done once); inside its folder each event gets its own subfolder for
+  that event's pictures. Then an admin-only wrap-up step for a finished event, in this
+  order: build a downloadable ZIP of all the event's pictures, delete the event (soft
+  delete, as today) and delete the event's picture folder from Drive (and the cached
+  copies). The ZIP is offered for download before the pictures go, so nothing is lost.
 - **1.8.0 — virus scanning of uploads** (e.g. ClamAV) and image moderation, if the raffles
   grow beyond trusted organizers.
 
