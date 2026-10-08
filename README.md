@@ -286,7 +286,9 @@ checked (max 40 megapixels) before any pixels are allocated, files are capped at
 (and the servlet at 12 MB per file / 60 MB per request), each user is limited to 60
 uploads per 10 minutes, and every picture is re-encoded from its decoded pixels (dropping
 EXIF/location data and anything else hidden in the file) and shrunk to a 1600px long edge;
-GIFs become still PNGs. The upload's bytes and name are never stored: files get app-minted
+GIFs become still PNGs. Uploads are streamed to temporary files, big photos are decoded at
+a reduced resolution, and pictures are processed one at a time (`raffle.uploads.concurrent`),
+so a batch of phone photos fits in a 512 MB instance. The upload's bytes and name are never stored: files get app-minted
 names, live outside the web root and are served only through `/images/<name>` with a fixed
 content type and `nosniff`. Only organizers of the event (or admins) can add, reorder or
 remove a prize's pictures, and a prize holds at most 10.

@@ -10,6 +10,7 @@ import org.openraffle.image.InvalidImageException;
 import org.openraffle.image.TestImages;
 import org.openraffle.drive.DriveService;
 import org.openraffle.drive.FakeDrive;
+import org.openraffle.image.UploadGate;
 import org.openraffle.image.UploadRateLimiter;
 import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
@@ -28,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({PrizeService.class, EventService.class, DriveService.class, UploadRateLimiter.class, FakeBgg.class, FakeDrive.class, PrizeImageStore.class, EventServiceTest.Users.class})
+@Import({PrizeService.class, EventService.class, DriveService.class, UploadRateLimiter.class, UploadGate.class, FakeBgg.class, FakeDrive.class, PrizeImageStore.class, EventServiceTest.Users.class})
 @TestPropertySource(properties = "raffle.images-dir=target/test-images")
 class PrizeServiceTest {
 
@@ -177,6 +178,24 @@ class PrizeServiceTest {
         java.nio.file.Path served = prizeService.restoreImage(picture.getFileName()).orElseThrow();
         assertThat(served.getFileName().toString()).isEqualTo(prizes.findById(bike.getId()).orElseThrow().getImageFile());
         assertThat(images.resolve(picture.getFileName())).isEmpty();
+    }
+
+    @Test
+    void anUploadStreamedToAFileIsProcessedFromThereAndTheGateIsReleasedEvenWhenItIsRefused() throws Exception {
+        Prize bike = linkedToDrive("Bike");
+        java.nio.file.Path photo = java.nio.file.Files.createTempFile("upload", ".jpg");
+        java.nio.file.Files.write(photo, TestImages.jpeg(3500, 2000));
+
+        PrizePicture picture = prizeService.addPicture(bike, photo, "image/jpeg", "photo.jpg");
+        assertThat(picture.getFileName()).endsWith(".jpg");
+        assertThat(photo).exists(); // the caller owns the temp file
+
+        java.nio.file.Files.write(photo, "<html>".getBytes());
+        assertThatThrownBy(() -> prizeService.addPicture(bike, photo, "image/jpeg", "photo.jpg"))
+                .isInstanceOf(InvalidImageException.class);
+        java.nio.file.Files.delete(photo);
+        // The gate let the next one in: a refused picture does not hold a permit.
+        assertThat(prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "ok.png")).isNotNull();
     }
 
     @Test

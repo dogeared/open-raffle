@@ -49,6 +49,9 @@ import org.openraffle.service.PrizeService;
 import org.openraffle.service.QrCodeService;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.openraffle.ui.MainLayout;
 import org.openraffle.ui.Paginator;
 import org.openraffle.ui.PrizeThumbnail;
@@ -204,6 +207,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         private final BeanValidationBinder<Prize> binder;
         private final Div list = new Div();
         private final Div uploadSlot = new Div();
+        /** One instance for the dialog's life: rebuilding it would cut off uploads still in flight. */
+        private final Upload upload;
+        private final Span dropLabel = new Span();
+        private final Span note = new Span();
 
         PicturesEditor(Prize[] prize, BeanValidationBinder<Prize> binder) {
             this.prize = prize;
@@ -212,25 +219,58 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
             H4 heading = new H4("Pictures");
             heading.addClassNames(LumoUtility.Margin.Bottom.XSMALL);
             list.addClassName("prize-pictures-list");
+            note.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+            // Streamed to a temporary file, never held in memory: six phone photos at once would not fit.
+            upload = new Upload(UploadHandler.toTempFile((meta, file) -> receive(meta.fileName(), meta.contentType(), file.toPath())));
+            upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif", ".jpg", ".jpeg", ".png", ".gif");
+            upload.setMaxFileSize((int) UploadedImage.MAX_BYTES);
+            upload.setDropAllowed(true);
+            upload.setWidthFull();
+            Button pick = new Button("Add pictures", VaadinIcon.UPLOAD.create());
+            upload.setUploadButton(pick);
+            upload.setDropLabel(dropLabel);
+            upload.addFileRejectedListener(e -> toast(e.getErrorMessage(), NotificationVariant.LUMO_ERROR));
+            upload.addFailedListener(e -> toast("Upload failed: " + e.getReason().getMessage(), NotificationVariant.LUMO_ERROR));
+            upload.addAllFinishedListener(e -> upload.clearFileList());
             add(heading, list, uploadSlot);
             render();
         }
 
-        /** Takes an upload (already received in full), checks and stores it, and refreshes. */
+        /** For tests: an upload already in memory. */
         public void receive(String fileName, String contentType, byte[] data) {
+            try {
+                Path temp = Files.createTempFile("open-raffle-upload-", ".bin");
+                Files.write(temp, data);
+                receive(fileName, contentType, temp);
+            } catch (IOException e) {
+                toast("The picture could not be read.", NotificationVariant.LUMO_ERROR);
+            }
+        }
+
+        /**
+         * Takes an upload streamed to {@code file} (deleted here afterwards), checks and
+         * stores it, and refreshes. Big batches wait their turn in the service, one at a time.
+         */
+        public void receive(String fileName, String contentType, Path file) {
             UI ui = UI.getCurrent();
             Runnable work = () -> {
                 try {
                     if (!ensureSaved()) {
                         return;
                     }
-                    prizeService.addPicture(prize[0], data, contentType, fileName);
+                    prizeService.addPicture(prize[0], file, contentType, fileName);
                     reload();
                     toast("Picture added", NotificationVariant.LUMO_SUCCESS);
                 } catch (InvalidImageException | DriveException ex) {
                     toast(ex.getMessage(), NotificationVariant.LUMO_ERROR);
                 } catch (RuntimeException ex) {
                     toast("The picture could not be added: " + ex.getMessage(), NotificationVariant.LUMO_ERROR);
+                } finally {
+                    try {
+                        Files.deleteIfExists(file);
+                    } catch (IOException ignored) {
+                        // a stray temp file is the OS's problem, not the organizer's
+                    }
                 }
                 render();
             };
@@ -262,7 +302,6 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
 
         void render() {
             list.removeAll();
-            uploadSlot.removeAll();
             List<PrizePicture> current = prize[0].getPictures();
             if (current.isEmpty()) {
                 Span none = new Span(prize[0].hasBggImage()
@@ -275,37 +314,31 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
                 list.add(row(current.get(i), i, current.size()));
             }
             DriveService.Status status = drive.status();
+            int room = Prize.MAX_PICTURES - current.size();
             if (!status.canUpload()) {
-                Span why = new Span(switch (status.state()) {
+                note.setText(switch (status.state()) {
                     case NOT_CONFIGURED -> "Uploading pictures needs Google Drive, which is not set up on this server.";
                     case NOT_CONNECTED -> "Connect Google Drive under Settings to upload pictures.";
                     case UNHEALTHY -> "Google Drive is not working (" + status.connection().getLastError() + "); see Settings.";
                     case CONNECTED -> "";
                 });
-                why.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-                uploadSlot.add(why);
-                return;
+                show(note);
+            } else if (room <= 0) {
+                note.setText("This prize has the most pictures it can have (" + Prize.MAX_PICTURES + ").");
+                show(note);
+            } else {
+                // The same Upload stays in place while a batch streams in; only its limits change.
+                upload.setMaxFiles(room);
+                dropLabel.setText("or drop JPEG, PNG or GIF files here (up to 10 MB each, " + room + " more)");
+                show(upload);
             }
-            int room = Prize.MAX_PICTURES - current.size();
-            if (room <= 0) {
-                Span full = new Span("This prize has the most pictures it can have (" + Prize.MAX_PICTURES + ").");
-                full.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-                uploadSlot.add(full);
-                return;
+        }
+
+        private void show(com.vaadin.flow.component.Component what) {
+            if (what.getParent().filter(p -> p == uploadSlot).isEmpty()) {
+                uploadSlot.removeAll();
+                uploadSlot.add(what);
             }
-            Upload upload = new Upload(UploadHandler.inMemory((meta, data) -> receive(meta.fileName(), meta.contentType(), data)));
-            upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif", ".jpg", ".jpeg", ".png", ".gif");
-            upload.setMaxFileSize((int) UploadedImage.MAX_BYTES);
-            upload.setMaxFiles(room);
-            upload.setDropAllowed(true);
-            upload.setWidthFull();
-            Button pick = new Button("Add pictures", VaadinIcon.UPLOAD.create());
-            upload.setUploadButton(pick);
-            upload.setDropLabel(new Span("or drop JPEG, PNG or GIF files here (up to 10 MB each, " + room + " more)"));
-            upload.addFileRejectedListener(e -> toast(e.getErrorMessage(), NotificationVariant.LUMO_ERROR));
-            upload.addFailedListener(e -> toast("Upload failed: " + e.getReason().getMessage(), NotificationVariant.LUMO_ERROR));
-            upload.addAllFinishedListener(e -> upload.clearFileList());
-            uploadSlot.add(upload);
         }
 
         private Div row(PrizePicture picture, int index, int count) {
