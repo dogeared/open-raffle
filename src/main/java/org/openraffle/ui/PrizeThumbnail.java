@@ -7,11 +7,13 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import org.openraffle.domain.Prize;
 
+import java.util.List;
+
 /**
- * A prize's stored picture as a small square, for grid rows and list rows. Hovering shows
+ * A prize's primary picture as a small square, for grid rows and list rows. Hovering shows
  * the full-size picture, which stays while the pointer is on the thumbnail or on the picture
- * itself; clicking opens it to stay until closed.
- * Both carry BGG's rating in the lower right corner, when the prize is linked to a game.
+ * itself; clicking opens it to stay until closed. With several pictures the large view has
+ * a strip of thumbnails underneath, and resting on (or tapping) one swaps it in.
  */
 public final class PrizeThumbnail {
 
@@ -34,6 +36,7 @@ public final class PrizeThumbnail {
         image.getElement().setAttribute("title", "Show a larger picture");
         image.getElement().setAttribute("role", "button");
         image.getElement().setAttribute("tabindex", "0");
+        fallBackToBgg(image, prize);
 
         Preview preview = new Preview(prize);
         image.addClickListener(e -> preview.pin());
@@ -45,6 +48,16 @@ public final class PrizeThumbnail {
                 .setFilter(POINTER_NOT_ON_PICTURE)
                 .debounce(LEAVE_GRACE_MS);
         return image;
+    }
+
+    /**
+     * An uploaded picture that cannot be served (Drive and the cache both empty-handed)
+     * gives way to the BoardGameGeek box image in the browser, without a round trip.
+     */
+    private static void fallBackToBgg(Image image, Prize prize) {
+        if (!prize.getPictures().isEmpty() && prize.hasBggImage()) {
+            image.getElement().setAttribute("onerror", "this.onerror=null;this.src='" + prize.getBggImageUrl() + "'");
+        }
     }
 
     /**
@@ -129,16 +142,51 @@ public final class PrizeThumbnail {
         }
     }
 
-    /** The full-size picture with BGG's rating badge over its lower right corner. */
+    /**
+     * The full-size view: the primary picture with BGG's rating badge over its lower right
+     * corner and, when there are more pictures, a strip of them underneath; resting the
+     * pointer on one (or tapping it) makes it the one shown.
+     */
     public static Div picture(Prize prize) {
-        Image large = new Image(prize.getImageUrl(), prize.getName());
+        List<String> gallery = prize.getGalleryUrls();
+        Image large = new Image(gallery.isEmpty() ? "" : gallery.get(0), prize.getName());
         large.addClassName("prize-picture-large");
-        Div frame = new Div(large);
-        frame.addClassName("prize-picture-frame");
+        fallBackToBgg(large, prize);
+        Div stage = new Div(large);
+        stage.addClassName("prize-picture-stage");
         Anchor rating = BggRatingBadge.of(prize);
         if (rating != null) {
-            frame.add(rating);
+            stage.add(rating);
+        }
+        Div frame = new Div(stage);
+        frame.addClassName("prize-picture-frame");
+        if (gallery.size() > 1) {
+            frame.add(strip(prize, gallery, large));
         }
         return frame;
+    }
+
+    private static Div strip(Prize prize, List<String> gallery, Image large) {
+        Div strip = new Div();
+        strip.addClassName("prize-picture-strip");
+        for (int i = 0; i < gallery.size(); i++) {
+            String url = gallery.get(i);
+            Image thumb = new Image(url, prize.getName() + ", picture " + (i + 1));
+            thumb.addClassName("prize-picture-strip-item");
+            if (i == 0) {
+                thumb.addClassName("active");
+            }
+            thumb.getElement().setAttribute("tabindex", "0");
+            thumb.getElement().setAttribute("role", "button");
+            Runnable select = () -> {
+                large.setSrc(url);
+                strip.getChildren().forEach(c -> c.getElement().getClassList().set("active", c == thumb));
+            };
+            thumb.getElement().addEventListener("mouseenter", e -> select.run());
+            thumb.addClickListener(e -> select.run());
+            thumb.getElement().addEventListener("focus", e -> select.run());
+            strip.add(thumb);
+        }
+        return strip;
     }
 }

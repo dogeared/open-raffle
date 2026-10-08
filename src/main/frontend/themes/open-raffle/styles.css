@@ -176,21 +176,60 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .prize-thumbnail {
   cursor: pointer;
 }
-/* The full-size picture dialog: as big as the window allows, box art proportions kept.
-   The frame hugs the picture so the rating badge sits on the picture's own corner. */
+/* The full-size picture dialog. The stage has a fixed footprint that depends only on the
+   window, never on the picture, so the popup does not grow or shrink (and slide away from
+   the pointer) as pictures of different shapes are shown; each one is letterboxed inside.
+   The strip underneath is one fixed-height row for the same reason. */
 .prize-picture-frame {
-  position: relative;
   display: inline-block;
   max-width: 100%;
+  background: #fff;
+}
+.prize-picture-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(90vw, 700px);
+  height: min(70vh, 700px);
+  background: var(--lumo-contrast-5pct);
+  line-height: 0;
 }
 .prize-picture-large {
   display: block;
-  max-width: min(90vw, 900px);
-  max-height: 75vh;
+  max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
-  margin: 0 auto;
+}
+.prize-picture-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: var(--lumo-space-xs);
+  padding: var(--lumo-space-s);
+  height: calc(3.5rem + 2 * var(--lumo-space-s));
+  box-sizing: border-box;
+  overflow-x: auto;
+  line-height: 0;
+}
+.prize-picture-strip-item {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: var(--lumo-border-radius-s);
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.prize-picture-strip-item.active,
+.prize-picture-strip-item:hover,
+.prize-picture-strip-item:focus-visible {
+  border-color: var(--lumo-primary-color);
+  opacity: 1;
+  outline: none;
 }
 .prize-picture-dialog::part(content) {
   text-align: center;
@@ -208,6 +247,10 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .prize-picture-peek .prize-picture-frame {
   display: block;
 }
+.prize-picture-pinned .prize-picture-frame {
+  display: block;
+  margin: 0 auto;
+}
 
 /* BoardGameGeek's rating square, in the colours BGG's game pages use for their rating
    box (its stylesheet's .has-rating-N rules): deep green for 9–10, green for 8, blue for 7,
@@ -215,6 +258,7 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
    the game for it to be ranked. White text, as on BGG. */
 .bgg-rating {
   position: absolute;
+  line-height: 1;
   right: var(--lumo-space-s);
   bottom: var(--lumo-space-s);
   min-width: 2.6em;
@@ -243,3 +287,27 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   margin-top: calc(-1 * var(--lumo-space-s));
   line-height: 0;
 }
+
+/* The pictures section of the prize editor. */
+.prize-pictures-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumo-space-xs);
+  width: 100%;
+}
+.prize-pictures-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lumo-space-s);
+  padding: var(--lumo-space-xs) var(--lumo-space-s);
+  border-radius: var(--lumo-border-radius-m);
+  background: var(--lumo-contrast-5pct);
+}
+.prize-pictures-row img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--lumo-border-radius-s);
+  flex-shrink: 0;
+}
+.prize-pictures-row .grow { flex: 1 1 auto; }

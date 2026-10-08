@@ -14,6 +14,11 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -33,6 +38,11 @@ import org.openraffle.bgg.BggClient;
 import org.openraffle.bgg.BggItem;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Prize;
+import org.openraffle.domain.PrizePicture;
+import org.openraffle.drive.DriveException;
+import org.openraffle.drive.DriveService;
+import org.openraffle.image.InvalidImageException;
+import org.openraffle.image.UploadedImage;
 import org.openraffle.security.SecurityConfig;
 import org.openraffle.service.EventService;
 import org.openraffle.service.PrizeService;
@@ -69,12 +79,14 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
     private final Image qr = new Image();
 
     private final BggClient bgg;
+    private final DriveService drive;
 
-    public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService, BggClient bgg) {
+    public PrizesView(PrizeService prizeService, EventService eventService, QrCodeService qrCodeService, BggClient bgg, DriveService drive) {
         this.prizeService = prizeService;
         this.eventService = eventService;
         this.qrCodeService = qrCodeService;
         this.bgg = bgg;
+        this.drive = drive;
         setSizeFull();
 
         Button add = new Button("Add prize", VaadinIcon.PLUS.create(), e -> openEditor(newPrize()));
@@ -181,6 +193,164 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         return game;
     }
 
+    /**
+     * The editor's pictures section: the prize's own pictures in order (the first is the
+     * primary one) with move and remove controls, and an upload box when Google Drive is
+     * connected. A new prize is saved on the first upload so the pictures have something to
+     * belong to.
+     */
+    public class PicturesEditor extends Div {
+        private final Prize[] prize;
+        private final BeanValidationBinder<Prize> binder;
+        private final Div list = new Div();
+        private final Div uploadSlot = new Div();
+
+        PicturesEditor(Prize[] prize, BeanValidationBinder<Prize> binder) {
+            this.prize = prize;
+            this.binder = binder;
+            addClassName("prize-pictures");
+            H4 heading = new H4("Pictures");
+            heading.addClassNames(LumoUtility.Margin.Bottom.XSMALL);
+            list.addClassName("prize-pictures-list");
+            add(heading, list, uploadSlot);
+            render();
+        }
+
+        /** Takes an upload (already received in full), checks and stores it, and refreshes. */
+        public void receive(String fileName, String contentType, byte[] data) {
+            UI ui = UI.getCurrent();
+            Runnable work = () -> {
+                try {
+                    if (!ensureSaved()) {
+                        return;
+                    }
+                    prizeService.addPicture(prize[0], data, contentType, fileName);
+                    reload();
+                    toast("Picture added", NotificationVariant.LUMO_SUCCESS);
+                } catch (InvalidImageException | DriveException ex) {
+                    toast(ex.getMessage(), NotificationVariant.LUMO_ERROR);
+                } catch (RuntimeException ex) {
+                    toast("The picture could not be added: " + ex.getMessage(), NotificationVariant.LUMO_ERROR);
+                }
+                render();
+            };
+            if (ui == null) {
+                work.run();
+            } else {
+                ui.access(work::run);
+            }
+        }
+
+        /** A new prize must exist before pictures can belong to it; the Name must be valid. */
+        private boolean ensureSaved() {
+            if (prize[0].getId() != null) {
+                return true;
+            }
+            try {
+                binder.writeBean(prize[0]);
+            } catch (ValidationException e) {
+                toast("Enter a name for the prize before adding pictures.", NotificationVariant.LUMO_ERROR);
+                return false;
+            }
+            prize[0] = prizeService.save(prize[0]);
+            return true;
+        }
+
+        private void reload() {
+            prizeService.findById(prize[0].getId()).ifPresent(fresh -> prize[0] = fresh);
+        }
+
+        void render() {
+            list.removeAll();
+            uploadSlot.removeAll();
+            List<PrizePicture> current = prize[0].getPictures();
+            if (current.isEmpty()) {
+                Span none = new Span(prize[0].hasBggImage()
+                        ? "No pictures of your own yet; the BoardGameGeek box image is shown."
+                        : "No pictures yet.");
+                none.addClassNames(LumoUtility.TextColor.TERTIARY, LumoUtility.FontSize.SMALL);
+                list.add(none);
+            }
+            for (int i = 0; i < current.size(); i++) {
+                list.add(row(current.get(i), i, current.size()));
+            }
+            DriveService.Status status = drive.status();
+            if (!status.canUpload()) {
+                Span why = new Span(switch (status.state()) {
+                    case NOT_CONFIGURED -> "Uploading pictures needs Google Drive, which is not set up on this server.";
+                    case NOT_CONNECTED -> "Connect Google Drive under Settings to upload pictures.";
+                    case UNHEALTHY -> "Google Drive is not working (" + status.connection().getLastError() + "); see Settings.";
+                    case CONNECTED -> "";
+                });
+                why.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+                uploadSlot.add(why);
+                return;
+            }
+            int room = Prize.MAX_PICTURES - current.size();
+            if (room <= 0) {
+                Span full = new Span("This prize has the most pictures it can have (" + Prize.MAX_PICTURES + ").");
+                full.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+                uploadSlot.add(full);
+                return;
+            }
+            Upload upload = new Upload(UploadHandler.inMemory((meta, data) -> receive(meta.fileName(), meta.contentType(), data)));
+            upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif", ".jpg", ".jpeg", ".png", ".gif");
+            upload.setMaxFileSize((int) UploadedImage.MAX_BYTES);
+            upload.setMaxFiles(room);
+            upload.setDropAllowed(true);
+            upload.setWidthFull();
+            Button pick = new Button("Add pictures", VaadinIcon.UPLOAD.create());
+            upload.setUploadButton(pick);
+            upload.setDropLabel(new Span("or drop JPEG, PNG or GIF files here (up to 10 MB each, " + room + " more)"));
+            upload.addFileRejectedListener(e -> toast(e.getErrorMessage(), NotificationVariant.LUMO_ERROR));
+            upload.addFailedListener(e -> toast("Upload failed: " + e.getReason().getMessage(), NotificationVariant.LUMO_ERROR));
+            upload.addAllFinishedListener(e -> upload.clearFileList());
+            uploadSlot.add(upload);
+        }
+
+        private Div row(PrizePicture picture, int index, int count) {
+            Div row = new Div();
+            row.addClassName("prize-pictures-row");
+            Image thumb = new Image(picture.getUrl(), prize[0].getName() + ", picture " + (index + 1));
+            Span label = new Span(index == 0 ? "Primary picture" : "Picture " + (index + 1));
+            if (index == 0) {
+                label.getElement().getThemeList().addAll(java.util.List.of("badge", "primary"));
+            }
+            Div text = new Div(label);
+            text.addClassName("grow");
+            Button up = iconButton(VaadinIcon.ARROW_UP, "Move up", () -> move(picture, -1));
+            up.setEnabled(index > 0);
+            Button down = iconButton(VaadinIcon.ARROW_DOWN, "Move down", () -> move(picture, 1));
+            down.setEnabled(index < count - 1);
+            Button remove = iconButton(VaadinIcon.CLOSE_SMALL, "Remove picture", () -> {
+                prizeService.removePicture(prize[0], picture);
+                reload();
+                render();
+            });
+            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            row.add(thumb, text, up, down, remove);
+            return row;
+        }
+
+        private void move(PrizePicture picture, int delta) {
+            prizeService.movePicture(prize[0], picture, delta);
+            reload();
+            render();
+        }
+
+        private Button iconButton(VaadinIcon icon, String tooltip, Runnable action) {
+            Button button = new Button(icon.create(), e -> action.run());
+            button.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+            button.setTooltipText(tooltip);
+            button.setAriaLabel(tooltip);
+            return button;
+        }
+    }
+
+    private static void toast(String text, NotificationVariant variant) {
+        Notification.show(text, 5000, Notification.Position.BOTTOM_CENTER).addThemeVariants(variant);
+    }
+
     /** BGG's API terms ask for their badge wherever their data is used; it sits under the lookup. */
     static Anchor poweredByBgg() {
         Image badge = new Image("img/bgg-powered-by.png", "Powered by BoardGameGeek");
@@ -208,8 +378,10 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         pages.setItems(prizeService.findAll(event));
     }
 
-    private void openEditor(Prize prize) {
-        Dialog dialog = new Dialog(prize.getId() == null ? "New prize" : "Edit prize");
+    private void openEditor(Prize initial) {
+        Dialog dialog = new Dialog(initial.getId() == null ? "New prize" : "Edit prize");
+        // Uploading a picture saves a brand-new prize first, so the edited instance can change.
+        Prize[] prize = {initial};
 
         TextField name = new TextField("Name");
         TextArea description = new TextArea("Description");
@@ -224,28 +396,30 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
                     p.setBggId(item == null ? null : item.id());
                     p.setBggName(item == null ? null : item.name());
                 });
-        binder.readBean(prize);
+        binder.readBean(prize[0]);
 
         FormLayout form = new FormLayout(game, poweredByBgg(), name, description);
         form.setColspan(game, 2);
         form.setColspan(name, 2);
         form.setColspan(description, 2);
-        Image current = PrizeThumbnail.of(prize, "6rem");
-        if (current != null) {
-            Div preview = new Div(current);
-            preview.getElement().setAttribute("title", "The current picture, from BoardGameGeek");
-            dialog.add(preview);
-        }
         dialog.add(form);
+        PicturesEditor pictures = new PicturesEditor(prize, binder);
+        dialog.add(pictures);
+        dialog.setWidth("min(95vw, 640px)");
 
         Button save = new Button("Save", e -> {
             try {
-                binder.writeBean(prize);
-                prizeService.save(prize);
+                binder.writeBean(prize[0]);
+                prizeService.save(prize[0]);
                 dialog.close();
                 refresh();
             } catch (ValidationException ex) {
                 // field-level errors already shown by the binder
+            }
+        });
+        dialog.addOpenedChangeListener(e -> {
+            if (!e.isOpened()) {
+                refresh(); // pictures may have changed even if Save was not pressed
             }
         });
         save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

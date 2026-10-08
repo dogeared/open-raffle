@@ -11,6 +11,10 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.upload.Upload;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
+import org.openraffle.image.TestImages;
 import org.junit.jupiter.api.Test;
 import org.openraffle.bgg.BggItem;
 import org.openraffle.bgg.FakeBggClient;
@@ -28,7 +32,10 @@ import static com.github.mvysny.kaributesting.v10.GridKt._getCellComponent;
 import static com.github.mvysny.kaributesting.v10.GridKt._getFormattedRow;
 import static com.github.mvysny.kaributesting.v10.GridKt._size;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._assertNoDialogs;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._assertNone;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._assertOne;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
+import static com.github.mvysny.kaributesting.v10.NotificationsKt.getNotifications;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._setValue;
@@ -118,6 +125,78 @@ class PrizesViewTest extends KaribuTest {
 
         assertThat(game.isEnabled()).isFalse();
         assertThat(game.getHelperText()).contains("BGG_API_KEY");
+    }
+
+    @Test
+    void picturesCanBeUploadedOrderedAndRemovedInTheEditorOnceDriveIsConnected() throws Exception {
+        connectDrive();
+        Event fair = openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+        _setValue(_get(TextField.class, spec -> spec.withLabel("Name")), "Bike");
+        PrizesView.PicturesEditor pictures = _get(PrizesView.PicturesEditor.class);
+        assertThat(pictures.getElement().getTextRecursively()).contains("No pictures yet");
+        _assertOne(Upload.class);
+
+        // The first upload saves the new prize, then attaches the picture.
+        receive(pictures, "front.jpg", "image/jpeg", TestImages.jpeg(400, 300));
+        receive(pictures, "back.png", "image/png", TestImages.png(200, 200));
+
+        Prize saved = prizes.findAllByEventAlphabetically(fair).get(0);
+        assertThat(saved.getName()).isEqualTo("Bike");
+        assertThat(saved.getPictures()).hasSize(2);
+        assertThat(pictures.getElement().getTextRecursively()).contains("Primary picture").contains("Picture 2");
+        assertThat(_find(pictures, Image.class)).hasSize(2);
+
+        // Move the second up: it becomes the primary.
+        _click(_find(pictures, Button.class, spec -> spec.withPredicate(b -> "Move up".equals(b.getAriaLabel().orElse("")))).get(1));
+        saved = prizes.findById(saved.getId()).orElseThrow();
+        assertThat(saved.getPictures().get(0).getFileName()).endsWith(".png");
+
+        // Remove the primary: the other takes over.
+        _click(_find(pictures, Button.class, spec -> spec.withPredicate(b -> "Remove picture".equals(b.getAriaLabel().orElse("")))).get(0));
+        saved = prizes.findById(saved.getId()).orElseThrow();
+        assertThat(saved.getPictures()).hasSize(1);
+        assertThat(saved.getPictures().get(0).getFileName()).endsWith(".jpg");
+
+        // A bad file is explained and nothing changes.
+        receive(pictures, "evil.svg", "image/svg+xml", "<svg/>".getBytes());
+        assertThat(getNotifications()).extracting(n -> n.getElement().getProperty("text"))
+                .anySatisfy(text -> assertThat(text).contains("Only JPEG"));
+        assertThat(prizes.findById(saved.getId()).orElseThrow().getPictures()).hasSize(1);
+
+        _click(_get(Button.class, spec -> spec.withText("Save")));
+        _assertNoDialogs();
+        assertThat(_getCellComponent(grid(), 0, "picture")).isInstanceOf(Image.class);
+    }
+
+    /** An upload arrives on a request thread and updates the UI through UI.access, which Karibu runs on the next round trip. */
+    private static void receive(PrizesView.PicturesEditor pictures, String name, String type, byte[] bytes) {
+        pictures.receive(name, type, bytes);
+        MockVaadin.INSTANCE.clientRoundtrip();
+    }
+
+    @Test
+    void withoutDriveTheEditorSaysWhereToConnectInsteadOfOfferingUploads() {
+        openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+
+        PrizesView.PicturesEditor pictures = _get(PrizesView.PicturesEditor.class);
+
+        _assertNone(Upload.class);
+        assertThat(pictures.getElement().getTextRecursively()).contains("Connect Google Drive under Settings");
+    }
+
+    @Test
+    void aNewPrizeNeedsANameBeforeItsFirstPicture() {
+        connectDrive();
+        openPrizes();
+        _click(_get(Button.class, spec -> spec.withText("Add prize")));
+
+        receive(_get(PrizesView.PicturesEditor.class), "a.png", "image/png", TestImages.png(10, 10));
+
+        assertThat(getNotifications()).extracting(n -> n.getElement().getProperty("text"))
+                .anySatisfy(text -> assertThat(text).contains("Enter a name"));
+        assertThat(prizes.count()).isZero();
     }
 
     @Test

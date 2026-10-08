@@ -5,6 +5,7 @@ import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.openraffle.drive.DriveCallbackController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +51,9 @@ public class SecurityConfig {
                 // Prize pictures appear on the public prize list and participants' wishlists.
                 .requestMatchers(HttpMethod.GET, "/images/*").permitAll()
                 // The app's own static pictures (the "Powered by BGG" badge).
-                .requestMatchers(HttpMethod.GET, "/img/**").permitAll());
+                .requestMatchers(HttpMethod.GET, "/img/**").permitAll()
+                // Google sends the browser back here after the Drive consent screen.
+                .requestMatchers(HttpMethod.GET, DriveCallbackController.PATH).hasAnyRole(ROLE_ADMIN, ROLE_ORGANIZER));
         // Vaadin's defaults (static resources, CSRF, navigation access control), plus:
         // redirect unauthenticated users straight to Keycloak; after logout, send them
         // through Keycloak's end-session endpoint and back to the app root; a fresh login

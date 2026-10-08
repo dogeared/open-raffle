@@ -8,6 +8,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.vaadin.flow.server.VaadinServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Participant;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,10 +53,15 @@ public class QrCodeService {
         if (request == null) {
             throw new IllegalStateException("raffle.public-url is not set and there is no current request to derive it from");
         }
-        return stripTrailingSlash(ServletUriComponentsBuilder
-                .fromContextPath(request.getHttpServletRequest())
-                .build()
-                .toUriString());
+        return publicBaseUrl(request.getHttpServletRequest());
+    }
+
+    /** The same, for code handling a plain servlet request (outside Vaadin). */
+    public String publicBaseUrl(HttpServletRequest request) {
+        if (!configuredPublicUrl.isEmpty()) {
+            return configuredPublicUrl;
+        }
+        return stripTrailingSlash(ServletUriComponentsBuilder.fromContextPath(request).build().toUriString());
     }
 
     public byte[] pngFor(Participant participant, int sizePx) {

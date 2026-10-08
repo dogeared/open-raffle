@@ -20,11 +20,11 @@ class MainLayoutTest extends KaribuTest {
         start();
 
         navigate("events");
-        assertThat(_find(SideNavItem.class)).extracting(SideNavItem::getLabel).containsExactly("Events");
+        assertThat(_find(SideNavItem.class)).extracting(SideNavItem::getLabel).containsExactly("Events", "Settings");
 
         navigate("events/" + fair.getId());
         assertThat(_find(SideNavItem.class)).extracting(SideNavItem::getLabel)
-                .containsExactly("Events", "Spring fair", "Prizes", "Participants", "Reports", "Draw");
+                .containsExactly("Events", "Settings", "Spring fair", "Prizes", "Participants", "Reports", "Draw");
         _assertOne(Button.class, spec -> spec.withText("Log out"));
         assertThat(_get(AppFooter.class).getElement().getTextRecursively()).contains("version");
     }
