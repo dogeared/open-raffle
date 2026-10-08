@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pictures per prize from the prize editor, order them (the first is the primary picture,
   shown as the thumbnail) and remove them. The large view has a strip of all the prize's
   pictures underneath; resting the pointer on one, or tapping it, shows it large. The
-  BoardGameGeek box image, when there is one, comes last in the strip. A new prize is
-  saved on its first upload.
+  large view keeps one fixed footprint whatever the picture's shape (each is letterboxed
+  inside), so the popup never moves under the pointer. The BoardGameGeek box image, when
+  there is one, comes last in the strip. A new prize is saved on its first upload.
 - Pictures are cached locally and fetched from Drive again when a cached copy is missing;
   if Drive cannot supply a picture (deleted there, or the connection is unhealthy) the
   prize's BoardGameGeek image is shown instead, in the browser as well as on the server.
