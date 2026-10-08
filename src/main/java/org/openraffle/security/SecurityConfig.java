@@ -48,7 +48,9 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(EndpointRequest.to(HealthEndpoint.class, InfoEndpoint.class)).permitAll()
                 // Prize pictures appear on the public prize list and participants' wishlists.
-                .requestMatchers(HttpMethod.GET, "/images/*").permitAll());
+                .requestMatchers(HttpMethod.GET, "/images/*").permitAll()
+                // The app's own static pictures (the "Powered by BGG" badge).
+                .requestMatchers(HttpMethod.GET, "/img/**").permitAll());
         // Vaadin's defaults (static resources, CSRF, navigation access control), plus:
         // redirect unauthenticated users straight to Keycloak; after logout, send them
         // through Keycloak's end-session endpoint and back to the app root; a fresh login

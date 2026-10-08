@@ -7,8 +7,10 @@ import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @Theme("open-raffle")
 // Vaadin 25 no longer loads the Lumo utility classes (LumoUtility.*) with the theme.
 @StyleSheet(Lumo.UTILITY_STYLESHEET)

@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stays up while the pointer is on the thumbnail or on the picture itself and goes away
   when it leaves; clicking keeps it open with a Close button, as before.
 
+- **Ratings keep themselves current.** A background job (a few times a day, pausing between
+  calls) fetches the rating of every linked prize whose rating is missing or a month old,
+  so games linked before ratings existed, or while BGG was down, get theirs without an
+  edit.
+- BoardGameGeek's "Powered by BGG" badge sits under the lookup field in the prize editor,
+  as BGG's API terms require; the image ships with the app.
+
 ### Changed
 - Thumbnails on the organizer's prizes grid are the same size as on the public prize list.
 

@@ -231,3 +231,10 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .bgg-rating-good  { background: #1d804c; }
 .bgg-rating-ok    { background: #5369a2; }
 .bgg-rating-poor  { background: #df4751; }
+
+/* "Powered by BGG" under the BoardGameGeek lookup in the prize editor. */
+.bgg-powered-by-link {
+  display: inline-block;
+  margin-top: calc(-1 * var(--lumo-space-s));
+  line-height: 0;
+}

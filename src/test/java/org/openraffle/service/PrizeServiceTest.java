@@ -30,6 +30,9 @@ class PrizeServiceTest {
     @Autowired
     TestEntityManager em;
 
+    @Autowired
+    org.openraffle.repository.PrizeRepository prizes;
+
     private Event event;
 
     @BeforeEach
@@ -151,6 +154,37 @@ class PrizeServiceTest {
         saved = prizeService.save(saved);
         assertThat(saved.getBggRating()).isEqualTo(8.5);
         assertThat(bgg.downloads).hasSize(1); // the picture was not fetched again
+    }
+
+    @Test
+    void theBackgroundRefresherFillsInRatingsThatWereNeverFetchedAndOldOnes() {
+        Prize neverFetched = prize("Dead Cells");
+        neverFetched.setBggId(13L);
+        neverFetched.setBggImageId(13L); // linked before ratings existed: no rating, no fetch date
+        neverFetched = prizes.save(neverFetched);
+        Prize old = prize("Carcassonne");
+        old.setBggId(822L);
+        old.setBggImageId(822L);
+        old.setBggRating(6.0);
+        old.setBggRatingAt(java.time.Instant.now().minus(PrizeService.RATING_MAX_AGE).minusSeconds(60));
+        old = prizes.save(old);
+        Prize fresh = prize("Seafarers");
+        fresh.setBggId(2655L);
+        fresh.setBggImageId(2655L);
+        fresh.setBggRating(5.0);
+        fresh.setBggRatingAt(java.time.Instant.now());
+        fresh = prizes.save(fresh);
+        prize("Mug"); // not linked at all
+
+        assertThat(prizeService.findWithStaleRating()).containsExactlyInAnyOrder(neverFetched, old);
+
+        new PrizeRatingRefresher(prizeService, bgg, 0).refreshStaleRatings();
+
+        assertThat(prizes.findById(neverFetched.getId()).orElseThrow().getBggRating()).isEqualTo(7.09005);
+        assertThat(prizes.findById(old.getId()).orElseThrow().getBggRating()).isEqualTo(7.4);
+        assertThat(prizes.findById(fresh.getId()).orElseThrow().getBggRating()).isEqualTo(5.0);
+        assertThat(prizeService.findWithStaleRating()).isEmpty();
+        assertThat(bgg.downloads).isEmpty(); // ratings only; no pictures fetched
     }
 
     @Test

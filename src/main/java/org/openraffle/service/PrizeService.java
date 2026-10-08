@@ -80,8 +80,28 @@ public class PrizeService {
         return saved;
     }
 
-    /** How long a cached BGG rating is trusted before a save refreshes it. */
-    static final Duration RATING_MAX_AGE = Duration.ofDays(30);
+    /** How long a cached BGG rating is trusted before it is refreshed. */
+    public static final Duration RATING_MAX_AGE = Duration.ofDays(30);
+
+    /** Linked prizes whose rating was never fetched (linked before ratings existed, or BGG was down) or is a month old. */
+    @Transactional(readOnly = true)
+    public List<Prize> findWithStaleRating() {
+        return prizes.findAllWithStaleRating(Instant.now().minus(RATING_MAX_AGE));
+    }
+
+    /** Fetches the prize's BGG rating now. Returns false when BGG did not answer. */
+    public boolean refreshRating(Prize prize) {
+        if (prize.getBggId() == null) {
+            return false;
+        }
+        Optional<BggThing> thing = bgg.thing(prize.getBggId());
+        if (thing.isEmpty()) {
+            return false;
+        }
+        recordRating(prize, thing.get());
+        prizes.save(prize);
+        return true;
+    }
 
     private static boolean ratingIsStale(Prize prize) {
         return prize.getBggRatingAt() == null || prize.getBggRatingAt().isBefore(Instant.now().minus(RATING_MAX_AGE));
