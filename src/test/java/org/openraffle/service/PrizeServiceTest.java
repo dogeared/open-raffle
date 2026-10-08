@@ -3,6 +3,14 @@ package org.openraffle.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openraffle.bgg.FakeBgg;
+import org.openraffle.domain.PrizePicture;
+import org.openraffle.drive.DriveException;
+import org.openraffle.drive.FakeDriveClient;
+import org.openraffle.image.InvalidImageException;
+import org.openraffle.image.TestImages;
+import org.openraffle.drive.DriveService;
+import org.openraffle.drive.FakeDrive;
+import org.openraffle.image.UploadRateLimiter;
 import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
 import org.openraffle.image.PrizeImageStore;
@@ -20,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({PrizeService.class, FakeBgg.class, PrizeImageStore.class})
+@Import({PrizeService.class, EventService.class, DriveService.class, UploadRateLimiter.class, FakeBgg.class, FakeDrive.class, PrizeImageStore.class, EventServiceTest.Users.class})
 @TestPropertySource(properties = "raffle.images-dir=target/test-images")
 class PrizeServiceTest {
 
@@ -32,6 +40,12 @@ class PrizeServiceTest {
 
     @Autowired
     org.openraffle.repository.PrizeRepository prizes;
+    @Autowired
+    FakeDriveClient drive;
+    @Autowired
+    DriveService driveService;
+    @Autowired
+    StubCurrentUser user;
 
     private Event event;
 
@@ -40,7 +54,137 @@ class PrizeServiceTest {
         bgg.downloads.clear();
         bgg.imagesAvailable = true;
         bgg.fullImagesAvailable = true;
+        drive.reset();
+        user.admin();
         event = event("Fair");
+    }
+
+    // --- organizers' own pictures ---------------------------------------------------------
+
+    private Prize linkedToDrive(String name) throws Exception {
+        driveService.complete("good-code", "https://x/drive/callback");
+        return prizeService.save(prize(name));
+    }
+
+    @Test
+    void uploadedPicturesAreCheckedReEncodedStoredLocallyAndInDriveAndOrdered() throws Exception {
+        Prize bike = linkedToDrive("Bike");
+
+        PrizePicture first = prizeService.addPicture(bike, TestImages.jpeg(800, 600), "image/jpeg", "IMG_1.JPG");
+        PrizePicture second = prizeService.addPicture(bike, TestImages.png(300, 300), "image/png", "box.png");
+
+        assertThat(first.getFileName()).matches("prize-" + bike.getId() + "-[a-f0-9]{16}\\.jpg");
+        assertThat(second.getFileName()).endsWith(".png");
+        assertThat(first.getPosition()).isZero();
+        assertThat(second.getPosition()).isEqualTo(1);
+        assertThat(first.getUploadedBy()).isEqualTo("admin@example.com");
+        assertThat(images.resolve(first.getFileName())).isPresent();
+        assertThat(drive.files).containsKey(first.getDriveFileId()).containsKey(second.getDriveFileId());
+        assertThat(drive.fileTypes.get(first.getDriveFileId())).isEqualTo("image/jpeg");
+        // What went to Drive is the re-encoded picture, not the upload.
+        assertThat(drive.files.get(first.getDriveFileId())).isEqualTo(java.nio.file.Files.readAllBytes(images.resolve(first.getFileName()).orElseThrow()));
+
+        Prize stored = prizes.findById(bike.getId()).orElseThrow();
+        assertThat(stored.getPictures()).extracting(PrizePicture::getFileName).containsExactly(first.getFileName(), second.getFileName());
+        assertThat(stored.getImageUrl()).isEqualTo("images/" + first.getFileName());
+        assertThat(stored.getGalleryUrls()).containsExactly("images/" + first.getFileName(), "images/" + second.getFileName());
+
+        // Moving the second to the front makes it the primary; the BGG image joins the gallery last.
+        prizeService.movePicture(stored, second, -1);
+        stored = prizes.findById(bike.getId()).orElseThrow();
+        assertThat(stored.getPictures()).extracting(PrizePicture::getFileName).containsExactly(second.getFileName(), first.getFileName());
+        assertThat(stored.getPictures()).extracting(PrizePicture::getPosition).containsExactly(0, 1);
+        stored.setBggId(13L);
+        stored = prizeService.save(stored);
+        assertThat(stored.getGalleryUrls()).hasSize(3).last().isEqualTo("images/" + stored.getImageFile());
+        assertThat(stored.getImageUrl()).isEqualTo("images/" + second.getFileName());
+
+        // Removing cleans the cache and Drive and renumbers.
+        prizeService.removePicture(stored, second);
+        stored = prizes.findById(bike.getId()).orElseThrow();
+        assertThat(stored.getPictures()).extracting(PrizePicture::getFileName).containsExactly(first.getFileName());
+        assertThat(stored.getPictures().get(0).getPosition()).isZero();
+        assertThat(images.resolve(second.getFileName())).isEmpty();
+        assertThat(drive.files).doesNotContainKey(second.getDriveFileId());
+    }
+
+    @Test
+    void uploadsAreRefusedWhenTheyShouldBeAndNothingIsKept() throws Exception {
+        Prize bike = linkedToDrive("Bike");
+
+        assertThatThrownBy(() -> prizeService.addPicture(bike, "<svg/>".getBytes(), "image/svg+xml", "x.svg"))
+                .isInstanceOf(InvalidImageException.class).hasMessageContaining("Only JPEG");
+        assertThat(prizes.findById(bike.getId()).orElseThrow().getPictures()).isEmpty();
+        assertThat(drive.files).isEmpty();
+
+        // Drive refusing: the local copy is not kept either.
+        long filesBefore = cachedFiles();
+        drive.failUploads = true;
+        assertThatThrownBy(() -> prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "a.png"))
+                .isInstanceOf(DriveException.class).hasMessageContaining("quota");
+        assertThat(cachedFiles()).isEqualTo(filesBefore);
+        drive.failUploads = false;
+
+        // Now unhealthy: refused before any work.
+        assertThatThrownBy(() -> prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "a.png"))
+                .isInstanceOf(DriveException.class).hasMessageContaining("Google Drive");
+        driveService.checkHealth();
+
+        // At most ten.
+        for (int i = 0; i < Prize.MAX_PICTURES; i++) {
+            prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "p" + i + ".png");
+        }
+        assertThatThrownBy(() -> prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "eleven.png"))
+                .isInstanceOf(InvalidImageException.class).hasMessageContaining("at most 10");
+
+        // Only someone who runs the event.
+        user.organizer("stranger@example.com");
+        assertThatThrownBy(() -> prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "a.png"))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThatThrownBy(() -> prizeService.removePicture(bike, prizes.findById(bike.getId()).orElseThrow().getPictures().get(0)))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void withoutADriveConnectionUploadsAreOffAndTheBggPictureStillWorks() {
+        Prize bike = prizeService.save(prize("Bike"));
+
+        assertThatThrownBy(() -> prizeService.addPicture(bike, TestImages.png(10, 10), "image/png", "a.png"))
+                .isInstanceOf(DriveException.class).hasMessageContaining("until Google Drive is connected");
+        bike.setBggId(13L);
+        assertThat(prizeService.save(bike).getImageUrl()).startsWith("images/prize-");
+    }
+
+    @Test
+    void aLostUploadComesBackFromDriveAndFailingThatTheBggPictureStandsIn() throws Exception {
+        Prize bike = linkedToDrive("Bike");
+        bike.setBggId(13L);
+        bike = prizeService.save(bike);
+        PrizePicture picture = prizeService.addPicture(bike, TestImages.png(20, 20), "image/png", "a.png");
+        java.nio.file.Files.delete(images.resolve(picture.getFileName()).orElseThrow());
+
+        // From Drive, under the same name.
+        assertThat(prizeService.restoreImage(picture.getFileName())).isPresent();
+        assertThat(images.resolve(picture.getFileName())).isPresent();
+
+        // Gone from Drive too: the BGG box image is served in its place.
+        java.nio.file.Files.delete(images.resolve(picture.getFileName()).orElseThrow());
+        drive.files.remove(picture.getDriveFileId());
+        java.nio.file.Path served = prizeService.restoreImage(picture.getFileName()).orElseThrow();
+        assertThat(served.getFileName().toString()).isEqualTo(prizes.findById(bike.getId()).orElseThrow().getImageFile());
+        assertThat(images.resolve(picture.getFileName())).isEmpty();
+    }
+
+    @Test
+    void deletingAPrizeRemovesItsUploadsEverywhere() throws Exception {
+        Prize bike = linkedToDrive("Bike");
+        PrizePicture picture = prizeService.addPicture(bike, TestImages.png(20, 20), "image/png", "a.png");
+
+        prizeService.delete(prizes.findById(bike.getId()).orElseThrow());
+
+        assertThat(images.resolve(picture.getFileName())).isEmpty();
+        assertThat(drive.files).isEmpty();
+        assertThat(prizes.findById(bike.getId())).isEmpty();
     }
 
     @Autowired
@@ -252,6 +396,12 @@ class PrizeServiceTest {
                 .hasMessageContaining("Ann");
         // Re-claiming by the same winner is harmless.
         assertThat(prizeService.claim(bike, ann).isClaimedBy(ann)).isTrue();
+    }
+
+    private long cachedFiles() throws java.io.IOException {
+        try (var files = java.nio.file.Files.list(images.directory())) {
+            return files.count();
+        }
     }
 
     private Prize prize(String name) {

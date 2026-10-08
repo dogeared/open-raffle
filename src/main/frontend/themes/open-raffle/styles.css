@@ -177,11 +177,41 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   cursor: pointer;
 }
 /* The full-size picture dialog: as big as the window allows, box art proportions kept.
-   The frame hugs the picture so the rating badge sits on the picture's own corner. */
+   The stage hugs the picture so the rating badge sits on the picture's own corner; the
+   frame adds the strip of other pictures underneath. */
 .prize-picture-frame {
-  position: relative;
   display: inline-block;
   max-width: 100%;
+  background: #fff;
+}
+.prize-picture-stage {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+.prize-picture-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--lumo-space-xs);
+  padding: var(--lumo-space-s);
+  line-height: 0;
+}
+.prize-picture-strip-item {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: var(--lumo-border-radius-s);
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.prize-picture-strip-item.active,
+.prize-picture-strip-item:hover,
+.prize-picture-strip-item:focus-visible {
+  border-color: var(--lumo-primary-color);
+  opacity: 1;
+  outline: none;
 }
 .prize-picture-large {
   display: block;
@@ -215,6 +245,7 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
    the game for it to be ranked. White text, as on BGG. */
 .bgg-rating {
   position: absolute;
+  line-height: 1;
   right: var(--lumo-space-s);
   bottom: var(--lumo-space-s);
   min-width: 2.6em;
@@ -243,3 +274,27 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   margin-top: calc(-1 * var(--lumo-space-s));
   line-height: 0;
 }
+
+/* The pictures section of the prize editor. */
+.prize-pictures-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lumo-space-xs);
+  width: 100%;
+}
+.prize-pictures-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lumo-space-s);
+  padding: var(--lumo-space-xs) var(--lumo-space-s);
+  border-radius: var(--lumo-border-radius-m);
+  background: var(--lumo-contrast-5pct);
+}
+.prize-pictures-row img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--lumo-border-radius-s);
+  flex-shrink: 0;
+}
+.prize-pictures-row .grow { flex: 1 1 auto; }

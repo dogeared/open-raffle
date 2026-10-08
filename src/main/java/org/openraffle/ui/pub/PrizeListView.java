@@ -111,7 +111,7 @@ public class PrizeListView extends VerticalLayout implements BeforeEnterObserver
         row.expand(label);
         if (prize.isClaimed()) {
             Span claimed = new Span("Claimed");
-            claimed.getElement().getThemeList().add("badge contrast");
+            claimed.getElement().getThemeList().addAll(java.util.List.of("badge", "contrast"));
             row.add(claimed);
         }
         return row;

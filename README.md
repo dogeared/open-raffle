@@ -79,7 +79,8 @@ All settings are environment variables with local-dev defaults (see
 | `PORT` | `8080` | HTTP port (injected by Render and similar hosts) |
 | `RAFFLE_PUBLIC_URL` | *(derived from each request)* | Base URL embedded in QR codes, e.g. `https://raffle.example.com`. Set this in production; phones must be able to open it. |
 | `BGG_API_KEY` | *(empty: lookup hidden)* | BoardGameGeek API token for the prize editor's game lookup; see [BoardGameGeek lookup](#boardgamegeek-lookup). |
-| `RAFFLE_IMAGES_DIR` | `./data/images` | Where prize pictures are stored. Treated as a cache: a picture whose file is missing (e.g. after a deploy on a host without persistent disks) is fetched from BoardGameGeek again when first viewed. |
+| `RAFFLE_IMAGES_DIR` | `./data/images` | Where prize pictures are cached. A picture whose file is missing (e.g. after a deploy on a host without persistent disks) is fetched again when first viewed: organizers' uploads from Google Drive, box art from BoardGameGeek. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | *(empty: uploads off)* | Google OAuth web client for connecting a Drive folder; see [Organizers' pictures (Google Drive)](#organizers-pictures-google-drive). |
 | `DB_URL` | `jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}` | Full JDBC URL; or set the parts below |
 | `DB_HOST` / `DB_PORT` / `DB_NAME` | `localhost` / `5432` / `raffle` | Database location, as managed Postgres providers hand it out |
 | `DB_USER` / `DB_PASSWORD` | `raffle` / `raffle` | Database credentials |
@@ -249,20 +250,48 @@ checked to really be images before they are stored. The directory is a cache: if
 gone (Render's filesystem is reset on every deploy, and the blueprint attaches no disk), the
 picture is fetched from BGG again the first time someone views it.
 
+## Organizers' pictures (Google Drive)
+
+Organizers and admins can upload up to 10 pictures per prize, ordered as they like; the
+first is the primary one (the thumbnail), and the large view shows a strip of the others
+that swap in on hover or tap. The BoardGameGeek box image, when there is one, comes last.
+Uploads need a Google Drive folder connected under **Settings**: the app keeps the pictures
+there (its own folder, created in the connected account, using the `drive.file` scope so it
+can only see files it created) and caches copies locally. If a cached copy is missing it is
+fetched from Drive again; if Drive cannot supply it either, the prize's BoardGameGeek image
+is shown instead. Settings shows the connection's state and lets anyone with access check,
+reconnect or disconnect it; while it is disconnected or unhealthy, uploads are refused and
+existing pictures keep showing from the cache.
+
+To enable it, create a Google OAuth client:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project (or pick
+   one), enable the **Google Drive API**, and configure the OAuth consent screen (External;
+   add the Google accounts that will connect as test users while the app is unverified).
+2. Create credentials → **OAuth client ID** → *Web application*, with
+   `https://<your host>/drive/callback` as an authorised redirect URI (and
+   `http://localhost:8081/drive/callback` for local development).
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (on Render the blueprint prompts for
+   them) and restart. Then open **Settings** and click **Connect Google Drive**.
+
+The refresh token is stored in the database; it grants access only to files the app
+created. Disconnecting forgets it (revoke the app at myaccount.google.com/permissions too).
+
+Uploads follow the
+[OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html):
+only `.jpg`/`.jpeg`/`.png`/`.gif` names and `image/jpeg|png|gif` types are accepted, the
+bytes must carry the matching image signature and must decode, the header's dimensions are
+checked (max 40 megapixels) before any pixels are allocated, files are capped at 10 MB
+(and the servlet at 12 MB per file / 60 MB per request), each user is limited to 60
+uploads per 10 minutes, and every picture is re-encoded from its decoded pixels (dropping
+EXIF/location data and anything else hidden in the file) and shrunk to a 1600px long edge;
+GIFs become still PNGs. The upload's bytes and name are never stored: files get app-minted
+names, live outside the web root and are served only through `/images/<name>` with a fixed
+content type and `nosniff`. Only organizers of the event (or admins) can add, reorder or
+remove a prize's pictures, and a prize holds at most 10.
+
 ## Roadmap
 
-- **External picture storage per event.** Instead of the local filesystem, an event could
-  be connected to a Google Drive folder: a connect flow on the event (OAuth consent, pick or
-  create a folder), a clear way to see the connection's state and to break and reconnect it,
-  pictures written to and read from that folder, and a fallback to the BoardGameGeek API
-  whenever a picture is not found there or the connection is unhealthy. Keeps Render
-  deploys zero-downtime and disk-free.
-- **1.7.0 — organizer photo uploads.** Organizers and admins upload their own prize
-  pictures (several per prize). Following the
-  [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html):
-  allow-list of extensions and content types verified by magic bytes, server-minted file
-  names (no user-supplied paths), a size limit per file and per request, a per-user rate
-  limit on uploads, storage outside the web root served only through the image endpoint
-  with `nosniff`, image re-encoding to strip metadata and payloads, and tests for every
-  rejection path (traversal, double extensions, polyglots, oversize, wrong type).
+- **1.8.0 — virus scanning of uploads** (e.g. ClamAV) and image moderation, if the raffles
+  grow beyond trusted organizers.
 

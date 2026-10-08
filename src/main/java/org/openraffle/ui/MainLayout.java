@@ -27,6 +27,7 @@ import org.openraffle.ui.admin.DrawView;
 import org.openraffle.ui.admin.ParticipantsView;
 import org.openraffle.ui.admin.PrizesView;
 import org.openraffle.ui.admin.ReportsView;
+import org.openraffle.ui.admin.SettingsView;
 import org.openraffle.ui.events.EventsView;
 
 import java.util.List;
@@ -111,6 +112,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private void buildNav(Event current) {
         nav.removeAll();
         nav.addItem(new SideNavItem("Events", EventsView.class, VaadinIcon.CALENDAR.create()));
+        nav.addItem(new SideNavItem("Settings", SettingsView.class, VaadinIcon.COG.create()));
         if (current != null) {
             RouteParameters params = new RouteParameters("eventId", String.valueOf(current.getId()));
             SideNavItem section = new SideNavItem(current.getName());

@@ -13,6 +13,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.openraffle.bgg.FakeBgg;
+import org.openraffle.drive.FakeDrive;
+import org.openraffle.drive.FakeDriveClient;
+import org.openraffle.repository.DriveConnectionRepository;
 import org.openraffle.bgg.FakeBggClient;
 import org.openraffle.domain.Event;
 import org.openraffle.domain.Organizer;
@@ -66,7 +69,7 @@ import java.util.Set;
         "raffle.bgg.refresh=false",
 })
 @AutoConfigureTestDatabase
-@Import({KaribuTest.StubOidcClient.class, FakeBgg.class})
+@Import({KaribuTest.StubOidcClient.class, FakeBgg.class, FakeDrive.class})
 public abstract class KaribuTest {
 
     @TestConfiguration
@@ -110,6 +113,10 @@ public abstract class KaribuTest {
 
     @Autowired
     FakeBggClient fakeBgg;
+    @Autowired
+    protected FakeDriveClient fakeDrive;
+    @Autowired
+    protected DriveConnectionRepository driveConnections;
 
     @BeforeEach
     void cleanSlate() {
@@ -118,6 +125,7 @@ public abstract class KaribuTest {
         fakeBgg.fullImagesAvailable = true;
         fakeBgg.downloads.clear();
         fakeBgg.searches.clear();
+        fakeDrive.reset();
         wipeDatabase();
         SecurityContextHolder.clearContext();
     }
@@ -167,6 +175,16 @@ public abstract class KaribuTest {
         prizes.deleteAll();
         events.deleteAll();
         organizers.deleteAll();
+        driveConnections.deleteAll();
+    }
+
+    /** Connects the fake Google Drive, as an organizer would through Settings. */
+    protected void connectDrive() {
+        try {
+            ctx.getBean(org.openraffle.drive.DriveService.class).complete("good-code", "http://localhost/drive/callback");
+        } catch (org.openraffle.drive.DriveException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** Someone the app has seen log in as an organizer. */

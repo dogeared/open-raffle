@@ -5,6 +5,33 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-10-08
+
+### Added
+- **Organizers' own prize pictures, kept in Google Drive.** Under **Settings**, an
+  organizer or admin connects a Google Drive folder (OAuth consent; the app creates its own
+  folder and can only see files it created) and can see the connection's state, check it,
+  reconnect or disconnect. Once connected, anyone running an event can upload up to 10
+  pictures per prize from the prize editor, order them (the first is the primary picture,
+  shown as the thumbnail) and remove them. The large view has a strip of all the prize's
+  pictures underneath; resting the pointer on one, or tapping it, shows it large. The
+  BoardGameGeek box image, when there is one, comes last in the strip. A new prize is
+  saved on its first upload.
+- Pictures are cached locally and fetched from Drive again when a cached copy is missing;
+  if Drive cannot supply a picture (deleted there, or the connection is unhealthy) the
+  prize's BoardGameGeek image is shown instead, in the browser as well as on the server.
+- Uploads are hardened per the OWASP File Upload Cheat Sheet: allow-listed names and
+  types, image signatures and decoding verified, dimensions checked from the header, 10 MB
+  per file, 60 uploads per user per 10 minutes, re-encoding that strips metadata and
+  hidden payloads, app-minted file names outside the web root, and access checks on every
+  change. The README lists the measures.
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` configure the Google OAuth client;
+  `render.yaml` prompts for them.
+
+### Security
+- PostgreSQL JDBC driver 42.7.13 → 42.7.14 (SNYK-JAVA-ORGPOSTGRESQL-20571163,
+  SNYK-JAVA-ORGPOSTGRESQL-20571178).
+
 ## [1.6.2] - 2026-10-07
 
 ### Added

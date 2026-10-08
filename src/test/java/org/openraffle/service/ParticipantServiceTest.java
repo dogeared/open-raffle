@@ -3,6 +3,9 @@ package org.openraffle.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openraffle.bgg.FakeBgg;
+import org.openraffle.drive.DriveService;
+import org.openraffle.drive.FakeDrive;
+import org.openraffle.image.UploadRateLimiter;
 import org.openraffle.domain.Event;
 import org.openraffle.image.PrizeImageStore;
 import org.springframework.test.context.TestPropertySource;
@@ -24,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({ParticipantService.class, PrizeService.class, FakeBgg.class, PrizeImageStore.class})
+@Import({ParticipantService.class, PrizeService.class, EventService.class, DriveService.class, UploadRateLimiter.class, FakeBgg.class, FakeDrive.class, PrizeImageStore.class, EventServiceTest.Users.class})
 @TestPropertySource(properties = "raffle.images-dir=target/test-images")
 class ParticipantServiceTest {
 

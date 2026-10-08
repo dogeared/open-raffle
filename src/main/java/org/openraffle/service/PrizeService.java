@@ -4,6 +4,14 @@ import org.openraffle.bgg.BggClient;
 import org.openraffle.bgg.BggImage;
 import org.openraffle.bgg.BggThing;
 import org.openraffle.domain.Event;
+import org.openraffle.domain.PrizePicture;
+import org.openraffle.drive.DriveException;
+import org.openraffle.drive.DriveService;
+import org.openraffle.image.InvalidImageException;
+import org.openraffle.image.UploadRateLimiter;
+import org.openraffle.image.UploadedImage;
+import org.openraffle.repository.PrizePictureRepository;
+import org.openraffle.security.CurrentUser;
 import org.openraffle.image.PrizeImageStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,19 +37,35 @@ public class PrizeService {
     private static final Logger log = LoggerFactory.getLogger(PrizeService.class);
 
     private final PrizeRepository prizes;
+    private final PrizePictureRepository pictures;
     private final BggClient bgg;
     private final PrizeImageStore images;
+    private final DriveService drive;
+    private final EventService eventService;
+    private final CurrentUser currentUser;
+    private final UploadRateLimiter uploadLimit;
 
-    public PrizeService(PrizeRepository prizes, BggClient bgg, PrizeImageStore images) {
+    public PrizeService(PrizeRepository prizes, PrizePictureRepository pictures, BggClient bgg, PrizeImageStore images,
+                        DriveService drive, EventService eventService, CurrentUser currentUser, UploadRateLimiter uploadLimit) {
         this.prizes = prizes;
+        this.pictures = pictures;
         this.bgg = bgg;
         this.images = images;
+        this.drive = drive;
+        this.eventService = eventService;
+        this.currentUser = currentUser;
+        this.uploadLimit = uploadLimit;
     }
 
     /** The event's prizes in alphabetical order; participants rank them themselves. */
     @Transactional(readOnly = true)
     public List<Prize> findAll(Event event) {
         return prizes.findAllByEventAlphabetically(event);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Prize> findById(Long id) {
+        return id == null ? Optional.empty() : prizes.findById(id);
     }
 
     /** The event's prizes that have been handed out, most recent first. */
@@ -163,26 +187,162 @@ public class PrizeService {
         if (imageFile == null || !PrizeImageStore.FILE_NAME.matcher(imageFile).matches()) {
             return Optional.empty();
         }
-        return prizes.findByImageFile(imageFile)
-                .filter(prize -> prize.getBggId() != null)
-                .flatMap(prize -> bgg.thing(prize.getBggId()))
+        Optional<PrizePicture> uploaded = pictures.findByFileName(imageFile);
+        if (uploaded.isPresent()) {
+            return restoreUpload(uploaded.get());
+        }
+        return prizes.findByImageFile(imageFile).flatMap(this::restoreBggImage);
+    }
+
+    /** An organizer's picture back from Google Drive; failing that, the prize's BGG box image. */
+    private Optional<Path> restoreUpload(PrizePicture picture) {
+        Optional<Path> fromDrive = drive.download(picture.getDriveFileId()).flatMap(bytes -> {
+            try {
+                log.info("Restored prize picture {} from Google Drive", picture.getFileName());
+                return images.storeAs(picture.getFileName(), bytes);
+            } catch (IOException e) {
+                log.warn("Could not restore prize picture {}: {}", picture.getFileName(), e.getMessage());
+                return Optional.empty();
+            }
+        });
+        if (fromDrive.isPresent()) {
+            return fromDrive;
+        }
+        Prize prize = picture.getPrize();
+        if (prize == null || !prize.hasBggImage()) {
+            return Optional.empty();
+        }
+        log.info("Prize picture {} unavailable; falling back to the BGG image", picture.getFileName());
+        return images.resolve(prize.getImageFile()).or(() -> restoreBggImage(prize));
+    }
+
+    private Optional<Path> restoreBggImage(Prize prize) {
+        if (prize.getBggId() == null || prize.getImageFile() == null) {
+            return Optional.empty();
+        }
+        return bgg.thing(prize.getBggId())
                 .flatMap(this::downloadArt)
                 .flatMap(image -> {
                     try {
-                        log.info("Restored prize image {} from BoardGameGeek", imageFile);
-                        return images.storeAs(imageFile, image.bytes());
+                        log.info("Restored prize image {} from BoardGameGeek", prize.getImageFile());
+                        return images.storeAs(prize.getImageFile(), image.bytes());
                     } catch (IOException e) {
-                        log.warn("Could not restore prize image {}: {}", imageFile, e.getMessage());
+                        log.warn("Could not restore prize image {}: {}", prize.getImageFile(), e.getMessage());
                         return Optional.empty();
                     }
                 });
     }
 
     public void delete(Prize prize) {
-        prizes.delete(prize);
-        if (prize.hasImage()) {
-            images.delete(prize.getImageFile());
+        Prize current = prizes.findById(prize.getId()).orElse(prize);
+        prizes.delete(current);
+        if (current.hasBggImage()) {
+            images.delete(current.getImageFile());
         }
+        for (PrizePicture picture : current.getPictures()) {
+            images.delete(picture.getFileName());
+            drive.delete(picture.getDriveFileId());
+        }
+    }
+
+    // --- organizers' own pictures ---------------------------------------------------------
+
+    /**
+     * Adds an uploaded picture to the end of the prize's list, after every check: the user
+     * may run the event, the prize has room, the user is not flooding, Google Drive is
+     * connected and working, and the bytes really are a picture (which is re-encoded, see
+     * {@link UploadedImage}). The picture goes to Drive first and the local cache second;
+     * if Drive refuses, nothing is kept.
+     *
+     * @throws InvalidImageException for anything the organizer can fix (type, size, count)
+     * @throws DriveException        when Google Drive is not available
+     */
+    public PrizePicture addPicture(Prize prize, byte[] upload, String declaredContentType, String fileName)
+            throws InvalidImageException, DriveException {
+        Prize current = requireEditable(prize);
+        if (current.getPictures().size() >= Prize.MAX_PICTURES) {
+            throw new InvalidImageException("A prize can have at most " + Prize.MAX_PICTURES + " pictures.");
+        }
+        String user = currentUser.email().orElse("");
+        if (!uploadLimit.allow(user)) {
+            throw new InvalidImageException("Too many uploads in a short time; please wait a few minutes.");
+        }
+        if (!drive.canUpload()) {
+            throw new DriveException("Pictures cannot be uploaded until Google Drive is connected (Settings).");
+        }
+        UploadedImage.Processed processed = UploadedImage.process(upload, declaredContentType, fileName);
+        String name;
+        try {
+            name = images.store(current.getId(), processed.bytes(), processed.extension());
+        } catch (IOException e) {
+            throw new InvalidImageException("The picture could not be stored on the server.");
+        }
+        String driveFileId;
+        try {
+            driveFileId = drive.upload(name, processed.contentType(), processed.bytes());
+        } catch (DriveException e) {
+            images.delete(name);
+            throw e;
+        }
+        PrizePicture picture = new PrizePicture();
+        picture.setPrize(current);
+        picture.setPosition(current.getPictures().size());
+        picture.setFileName(name);
+        picture.setDriveFileId(driveFileId);
+        picture.setContentType(processed.contentType());
+        picture.setCreatedAt(Instant.now());
+        picture.setUploadedBy(user.isEmpty() ? null : user);
+        current.getPictures().add(picture);
+        prizes.save(current);
+        return pictures.findByFileName(name).orElse(picture);
+    }
+
+    /** Removes the picture from the prize, the local cache and (best effort) Drive. */
+    public void removePicture(Prize prize, PrizePicture picture) {
+        Prize current = requireEditable(prize);
+        boolean removed = current.getPictures().removeIf(p -> p.getId() != null && p.getId().equals(picture.getId()));
+        if (!removed) {
+            return;
+        }
+        renumber(current);
+        prizes.save(current);
+        images.delete(picture.getFileName());
+        drive.delete(picture.getDriveFileId());
+    }
+
+    /** Moves the picture {@code delta} places (negative = towards the front); the first is the primary. */
+    public void movePicture(Prize prize, PrizePicture picture, int delta) {
+        Prize current = requireEditable(prize);
+        List<PrizePicture> list = current.getPictures();
+        int from = -1;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getId() != null && list.get(i).getId().equals(picture.getId())) {
+                from = i;
+            }
+        }
+        if (from < 0) {
+            return;
+        }
+        int to = Math.max(0, Math.min(list.size() - 1, from + delta));
+        PrizePicture moving = list.remove(from);
+        list.add(to, moving);
+        renumber(current);
+        prizes.save(current);
+    }
+
+    private static void renumber(Prize prize) {
+        List<PrizePicture> list = prize.getPictures();
+        for (int i = 0; i < list.size(); i++) {
+            list.get(i).setPosition(i);
+        }
+    }
+
+    /** The prize as stored, after checking the current user may run its event. */
+    private Prize requireEditable(Prize prize) {
+        Prize current = prizes.findById(prize.getId())
+                .orElseThrow(() -> new IllegalArgumentException("The prize no longer exists"));
+        eventService.requireAccess(current.getEvent().getId());
+        return current;
     }
 
     /** Records that {@code winner} took the prize. Fails if someone else already has it. */

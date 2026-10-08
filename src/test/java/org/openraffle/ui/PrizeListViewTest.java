@@ -18,6 +18,7 @@ import java.util.stream.IntStream;
 
 import static com.github.mvysny.kaributesting.v10.BasicUtilsKt._fireDomEvent;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._assertNone;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._assertOne;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
@@ -150,6 +151,51 @@ class PrizeListViewTest extends KaribuTest {
 
     private static Div frame(Dialog dialog) {
         return _get(dialog, Div.class, spec -> spec.withClasses("prize-picture-frame"));
+    }
+
+    @Test
+    void severalPicturesMakeAStripUnderTheLargeOneAndHoveringAStripThumbnailSwapsItIn() {
+        Event fair = event("Spring fair", "pat@example.com");
+        Prize bike = prize(fair, "Bike");
+        bike.setImageFile("prize-1-0123456789abcdef.png"); // the BGG box image
+        bike.setBggId(13L);
+        bike = prizes.save(bike);
+        bike = addPicture(bike, "prize-1-aaaaaaaaaaaaaaaa.jpg", 0);
+        bike = addPicture(bike, "prize-1-bbbbbbbbbbbbbbbb.jpg", 1);
+        start();
+        navigate("e/spring-fair");
+
+        Image thumbnail = _get(Image.class, spec -> spec.withClasses("prize-thumbnail"));
+        assertThat(thumbnail.getSrc()).isEqualTo("images/prize-1-aaaaaaaaaaaaaaaa.jpg"); // the first upload is primary
+        assertThat(thumbnail.getElement().getAttribute("onerror")).contains("images/prize-1-0123456789abcdef.png");
+        _click(thumbnail);
+
+        Dialog dialog = _get(Dialog.class, spec -> spec.withPredicate(Dialog::isOpened));
+        Image large = _get(dialog, Image.class, spec -> spec.withClasses("prize-picture-large"));
+        assertThat(large.getSrc()).isEqualTo("images/prize-1-aaaaaaaaaaaaaaaa.jpg");
+        java.util.List<Image> strip = _find(dialog, Image.class, spec -> spec.withClasses("prize-picture-strip-item"));
+        assertThat(strip).extracting(Image::getSrc).containsExactly(
+                "images/prize-1-aaaaaaaaaaaaaaaa.jpg", "images/prize-1-bbbbbbbbbbbbbbbb.jpg", "images/prize-1-0123456789abcdef.png");
+        assertThat(strip.get(0).getClassNames()).contains("active");
+
+        _fireDomEvent(strip.get(2), "mouseenter", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+        assertThat(large.getSrc()).isEqualTo("images/prize-1-0123456789abcdef.png");
+        assertThat(strip.get(2).getClassNames()).contains("active");
+        assertThat(strip.get(0).getClassNames()).doesNotContain("active");
+
+        _click(strip.get(1));
+        assertThat(large.getSrc()).isEqualTo("images/prize-1-bbbbbbbbbbbbbbbb.jpg");
+    }
+
+    private Prize addPicture(Prize prize, String fileName, int position) {
+        org.openraffle.domain.PrizePicture picture = new org.openraffle.domain.PrizePicture();
+        picture.setPrize(prize);
+        picture.setFileName(fileName);
+        picture.setDriveFileId("drive-" + position);
+        picture.setContentType("image/jpeg");
+        picture.setPosition(position);
+        prize.getPictures().add(picture);
+        return prizes.save(prize);
     }
 
     @Test

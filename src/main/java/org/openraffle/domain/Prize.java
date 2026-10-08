@@ -1,6 +1,14 @@
 package org.openraffle.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -64,6 +72,15 @@ public class Prize {
 
     /** How many people rated it on BGG; a handful means BGG shows the score in grey, unranked. */
     private Integer bggRatingCount;
+
+    /** Organizers' own pictures, in the order they chose; the first is the primary one. */
+    @OneToMany(mappedBy = "prize", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
+    @OrderBy("position ASC")
+    private List<PrizePicture> pictures = new ArrayList<>();
+
+    /** How many pictures an organizer may upload for one prize. */
+    public static final int MAX_PICTURES = 10;
 
     public Long getId() {
         return id;
@@ -173,13 +190,40 @@ public class Prize {
         this.bggRatingAt = bggRatingAt;
     }
 
-    public boolean hasImage() {
+    public List<PrizePicture> getPictures() {
+        return pictures;
+    }
+
+    /** The BGG box image, if one was downloaded. */
+    public boolean hasBggImage() {
         return imageFile != null && !imageFile.isBlank();
     }
 
-    /** The path the browser loads the picture from, or null without one. */
+    /** The BGG box image's path, or null without one. */
+    public String getBggImageUrl() {
+        return hasBggImage() ? "images/" + imageFile : null;
+    }
+
+    /** Whether there is anything to show: an uploaded picture or the BGG box image. */
+    public boolean hasImage() {
+        return !pictures.isEmpty() || hasBggImage();
+    }
+
+    /** The primary picture's path: the first uploaded one, else the BGG box image; null without either. */
     public String getImageUrl() {
-        return hasImage() ? "images/" + imageFile : null;
+        return pictures.isEmpty() ? getBggImageUrl() : pictures.get(0).getUrl();
+    }
+
+    /** Every picture to show, primary first: the uploads in order, then the BGG box image. */
+    public List<String> getGalleryUrls() {
+        List<String> urls = new ArrayList<>();
+        for (PrizePicture picture : pictures) {
+            urls.add(picture.getUrl());
+        }
+        if (hasBggImage()) {
+            urls.add(getBggImageUrl());
+        }
+        return urls;
     }
 
     public String getBggUrl() {

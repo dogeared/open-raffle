@@ -51,6 +51,13 @@ services:
       # to hide the lookup.
       - key: BGG_API_KEY
         sync: false
+      # Google OAuth web client for connecting a Drive folder (organizers' prize pictures).
+      # Authorised redirect URI: <RAFFLE_PUBLIC_URL>/drive/callback. Leave empty to keep
+      # uploads off; BoardGameGeek pictures still work.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       # No disk is attached (it would cost money and end zero-downtime deploys): prize
       # pictures live in the container's filesystem as a cache and are fetched from BGG
       # again on first view after a deploy. See the README's roadmap for external storage.
