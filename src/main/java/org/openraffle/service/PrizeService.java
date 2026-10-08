@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.nio.file.Path;
 import org.openraffle.domain.Participant;
 import org.openraffle.domain.Prize;
@@ -70,8 +72,24 @@ public class PrizeService {
         } else if (!saved.getBggId().equals(saved.getBggImageId())) {
             fetchImage(saved);
             saved = prizes.save(saved);
+        } else if (ratingIsStale(saved)) {
+            Prize linked = saved;
+            bgg.thing(linked.getBggId()).ifPresent(thing -> recordRating(linked, thing));
+            saved = prizes.save(linked);
         }
         return saved;
+    }
+
+    /** How long a cached BGG rating is trusted before a save refreshes it. */
+    static final Duration RATING_MAX_AGE = Duration.ofDays(30);
+
+    private static boolean ratingIsStale(Prize prize) {
+        return prize.getBggRatingAt() == null || prize.getBggRatingAt().isBefore(Instant.now().minus(RATING_MAX_AGE));
+    }
+
+    private static void recordRating(Prize prize, BggThing thing) {
+        prize.setBggRating(thing.rating());
+        prize.setBggRatingAt(Instant.now());
     }
 
     private void fetchImage(Prize prize) {
@@ -84,6 +102,7 @@ public class PrizeService {
         if (prize.getBggName() == null || prize.getBggName().isBlank()) {
             prize.setBggName(thing.get().name());
         }
+        recordRating(prize, thing.get());
         String previous = prize.getImageFile();
         Optional<BggImage> image = downloadArt(thing.get());
         if (image.isEmpty()) {

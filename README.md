@@ -229,7 +229,9 @@ typing in the **BoardGameGeek** field and pick the game, like the search box on 
 Picking one fills in the prize name (if empty), stores the BGG id with the prize and
 downloads the game's box image once into `RAFFLE_IMAGES_DIR`; the picture then shows on the
 prizes grid, the public prize list and participants' wishlists without further API calls.
-Unlinking the game removes the picture.
+Hover or click a thumbnail for the full-size picture, which carries BGG's community rating
+in BGG's colours (cached with the prize, refreshed on save after a month). Unlinking the
+game removes the picture.
 
 BGG's XML API requires a registered application and a bearer token:
 

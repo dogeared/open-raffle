@@ -112,7 +112,7 @@ public class XmlBggClient implements BggClient {
         if (!enabled) {
             return Optional.empty();
         }
-        return get(uri -> uri.path("/xmlapi2/thing").queryParam("id", id).build()).flatMap(doc -> {
+        return get(uri -> uri.path("/xmlapi2/thing").queryParam("id", id).queryParam("stats", 1).build()).flatMap(doc -> {
             NodeList nodes = doc.getElementsByTagName("item");
             if (nodes.getLength() == 0) {
                 return Optional.empty();
@@ -120,7 +120,7 @@ public class XmlBggClient implements BggClient {
             Element item = (Element) nodes.item(0);
             String name = primaryName(item);
             return Optional.of(new BggThing(id, name == null ? "BGG #" + id : name, year(item),
-                    text(item, "image"), text(item, "thumbnail")));
+                    text(item, "image"), text(item, "thumbnail"), rating(item)));
         });
     }
 
@@ -231,6 +231,23 @@ public class XmlBggClient implements BggClient {
         }
         Long year = parseLong(((Element) years.item(0)).getAttribute("value"));
         return year == null || year == 0 ? null : year.intValue();
+    }
+
+    /** The community average from {@code <statistics><ratings><average value=…/>}, 1–10, else null. */
+    private static Double rating(Element item) {
+        NodeList averages = item.getElementsByTagName("average");
+        for (int i = 0; i < averages.getLength(); i++) {
+            Element average = (Element) averages.item(i);
+            if (average.getParentNode() != null && "ratings".equals(average.getParentNode().getNodeName())) {
+                try {
+                    double value = Double.parseDouble(average.getAttribute("value").trim());
+                    return value > 0 && value <= 10 ? value : null;
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     private static String text(Element item, String tag) {

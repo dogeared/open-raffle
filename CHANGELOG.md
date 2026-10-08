@@ -5,6 +5,20 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-10-07
+
+### Added
+- **BGG rating on the picture.** The full-size picture carries BoardGameGeek's community
+  rating in its lower right corner, coloured the way BGG colours it (green from 8, dark
+  green from 7, blue from 5, red below) and linking to the game's BGG page. The rating is
+  cached with the prize when the game is linked and refreshed on a save once it is a month
+  old; ratings move slowly.
+- **Hover to peek.** Resting the pointer on a thumbnail shows the full-size picture until
+  the pointer leaves; clicking keeps it open with a Close button, as before.
+
+### Changed
+- Thumbnails on the organizer's prizes grid are the same size as on the public prize list.
+
 ## [1.6.1] - 2026-10-07
 
 ### Changed

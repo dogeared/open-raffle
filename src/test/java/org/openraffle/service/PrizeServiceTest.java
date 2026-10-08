@@ -133,6 +133,27 @@ class PrizeServiceTest {
     }
 
     @Test
+    void theBggRatingIsCachedOnLinkAndRefreshedOnlyOnceItIsAMonthOld() {
+        Prize prize = prize("Bike");
+        prize.setBggId(13L);
+        Prize saved = prizeService.save(prize);
+        assertThat(saved.getBggRating()).isEqualTo(7.09005);
+        assertThat(saved.getBggRatingAt()).isNotNull();
+
+        // Fresh enough: a plain save leaves it alone even though BGG now says otherwise.
+        bgg.ratings.put(13L, 8.5);
+        saved.setDescription("Red");
+        saved = prizeService.save(saved);
+        assertThat(saved.getBggRating()).isEqualTo(7.09005);
+
+        // A month on, the next save refreshes it.
+        saved.setBggRatingAt(java.time.Instant.now().minus(PrizeService.RATING_MAX_AGE).minusSeconds(60));
+        saved = prizeService.save(saved);
+        assertThat(saved.getBggRating()).isEqualTo(8.5);
+        assertThat(bgg.downloads).hasSize(1); // the picture was not fetched again
+    }
+
+    @Test
     void deletingAPrizeDeletesItsPicture() {
         Prize prize = prize("Bike");
         prize.setBggId(13L);

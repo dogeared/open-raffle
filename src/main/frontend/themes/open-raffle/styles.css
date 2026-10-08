@@ -176,7 +176,13 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
 .prize-thumbnail {
   cursor: pointer;
 }
-/* The full-size picture dialog: as big as the window allows, box art proportions kept. */
+/* The full-size picture dialog: as big as the window allows, box art proportions kept.
+   The frame hugs the picture so the rating badge sits on the picture's own corner. */
+.prize-picture-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
 .prize-picture-large {
   display: block;
   max-width: min(90vw, 900px);
@@ -186,3 +192,29 @@ vaadin-grid-cell-content vaadin-button.wishlist-summary {
   object-fit: contain;
   margin: 0 auto;
 }
+.prize-picture-dialog::part(content) {
+  text-align: center;
+}
+
+/* BoardGameGeek's rating square, in BGG's own colours: green from 8, dark green from 7,
+   blue from 5, red below. */
+.bgg-rating {
+  position: absolute;
+  right: var(--lumo-space-s);
+  bottom: var(--lumo-space-s);
+  min-width: 2.6em;
+  padding: 0.35em 0.5em;
+  border-radius: var(--lumo-border-radius-m);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--lumo-font-size-xl);
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.bgg-rating:hover { color: #fff; filter: brightness(1.1); }
+.bgg-rating-great { background: #2fc482; }
+.bgg-rating-good  { background: #1d804c; }
+.bgg-rating-ok    { background: #5369a2; }
+.bgg-rating-poor  { background: #df4751; }

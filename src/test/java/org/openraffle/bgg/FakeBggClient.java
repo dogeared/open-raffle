@@ -21,6 +21,7 @@ public class FakeBggClient implements BggClient {
             new BggItem(2655, "Catan: Seafarers", 1997),
             new BggItem(822, "Carcassonne", 2000)));
     public final List<String> searches = new ArrayList<>();
+    public final java.util.Map<Long, Double> ratings = new java.util.HashMap<>(java.util.Map.of(13L, 7.09005, 2655L, 7.2, 822L, 7.4));
     public final List<String> downloads = new ArrayList<>();
 
     @Override
@@ -38,7 +39,7 @@ public class FakeBggClient implements BggClient {
     @Override
     public Optional<BggThing> thing(long id) {
         return items.stream().filter(i -> i.id() == id).findFirst()
-                .map(i -> new BggThing(i.id(), i.name(), i.year(), imageUrl(i.id()), imageUrl(i.id()) + "?thumb"));
+                .map(i -> new BggThing(i.id(), i.name(), i.year(), imageUrl(i.id()), imageUrl(i.id()) + "?thumb", ratings.get(i.id())));
     }
 
     public static String imageUrl(long id) {

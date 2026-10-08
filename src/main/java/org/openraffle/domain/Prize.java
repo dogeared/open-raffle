@@ -56,6 +56,12 @@ public class Prize {
     /** Stored image file name (see PrizeImageStore), or null when there is no picture. */
     private String imageFile;
 
+    /** BGG's community average rating (1–10) as last fetched; ratings move slowly, so it is cached here. */
+    private Double bggRating;
+
+    /** When {@link #bggRating} was fetched; refreshed on save once it is older than a month. */
+    private Instant bggRatingAt;
+
     public Long getId() {
         return id;
     }
@@ -138,6 +144,22 @@ public class Prize {
 
     public void setImageFile(String imageFile) {
         this.imageFile = imageFile;
+    }
+
+    public Double getBggRating() {
+        return bggRating;
+    }
+
+    public void setBggRating(Double bggRating) {
+        this.bggRating = bggRating;
+    }
+
+    public Instant getBggRatingAt() {
+        return bggRatingAt;
+    }
+
+    public void setBggRatingAt(Instant bggRatingAt) {
+        this.bggRatingAt = bggRatingAt;
     }
 
     public boolean hasImage() {

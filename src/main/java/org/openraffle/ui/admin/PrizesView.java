@@ -106,9 +106,9 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
         grid.addColumn(prize -> pages.getPage() * pages.getPageSize() + currentPage.indexOf(prize) + 1)
                 .setHeader("#").setKey("number").setWidth("4em").setFlexGrow(0);
         Grid.Column<Prize> picture = grid.addComponentColumn(prize -> {
-            Image thumbnail = PrizeThumbnail.of(prize, "2.5rem");
+            Image thumbnail = PrizeThumbnail.of(prize, "3rem");
             return thumbnail == null ? new Span() : thumbnail;
-        }).setHeader("").setKey("picture").setWidth("3.5em").setFlexGrow(0);
+        }).setHeader("").setKey("picture").setWidth("4em").setFlexGrow(0);
         grid.addColumn(Prize::getName).setHeader("Name").setKey("name").setWidth("6em").setFlexGrow(2);
         Grid.Column<Prize> description = grid.addColumn(Prize::getDescription)
                 .setHeader("Description").setKey("description").setWidth("8em").setFlexGrow(3);
