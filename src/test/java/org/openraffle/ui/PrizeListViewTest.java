@@ -134,10 +134,15 @@ class PrizeListViewTest extends KaribuTest {
         _fireDomEvent(thumbnail, "mouseenter", data);
     }
 
-    /** The thumbnail's mouseleave is debounced as well. */
+    /**
+     * The thumbnail's mouseleave is debounced too, and filtered on the client: the browser
+     * only sends it when the pointer is not inside a picture's box, and reports the filter's
+     * result with the event. This is such a leave.
+     */
     private static void leave(Image thumbnail) {
         var data = tools.jackson.databind.json.JsonMapper.shared().createObjectNode();
         data.put(com.vaadin.flow.shared.JsonConstants.EVENT_DATA_PHASE, com.vaadin.flow.dom.DebouncePhase.TRAILING.getIdentifier());
+        data.put(PrizeThumbnail.POINTER_NOT_ON_PICTURE, true);
         _fireDomEvent(thumbnail, "mouseleave", data);
     }
 
