@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   collector, and trims thread stacks, metaspace and the code cache, which keeps the
   process under about 430 MB through batches of six 12-megapixel HDR uploads; request
   threads and database connections are fewer too.
+- After a restart the picture cache is empty and a page of thumbnails fetched every
+  picture back from Google Drive or BoardGameGeek at once, each holding a whole file in
+  memory; Render's metrics show that burst taking a fresh process to 500 MB within four
+  minutes. At most two pictures are fetched back at a time now; the rest wait briefly or
+  are asked for again by the browser.
 - Upload limits are enforced on the server, not only in the browser: one file per
   request, 10 MB each, a declared image type, and at most 8 uploads being received at
   once server-wide (more are refused, not queued). Vaadin's default was no server-side
