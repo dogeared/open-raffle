@@ -18,7 +18,6 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -42,6 +41,7 @@ import org.openraffle.domain.PrizePicture;
 import org.openraffle.drive.DriveException;
 import org.openraffle.drive.DriveService;
 import org.openraffle.image.InvalidImageException;
+import org.openraffle.image.PictureUploadHandler;
 import org.openraffle.image.UploadedImage;
 import org.openraffle.security.SecurityConfig;
 import org.openraffle.service.EventService;
@@ -221,7 +221,7 @@ public class PrizesView extends VerticalLayout implements BeforeEnterObserver {
             list.addClassName("prize-pictures-list");
             note.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
             // Streamed to a temporary file, never held in memory: six phone photos at once would not fit.
-            upload = new Upload(UploadHandler.toTempFile((meta, file) -> receive(meta.fileName(), meta.contentType(), file.toPath())));
+            upload = new Upload(new PictureUploadHandler((meta, file) -> receive(meta.fileName(), meta.contentType(), file.toPath())));
             upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif", ".jpg", ".jpeg", ".png", ".gif");
             upload.setMaxFileSize((int) UploadedImage.MAX_BYTES);
             upload.setDropAllowed(true);

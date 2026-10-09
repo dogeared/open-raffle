@@ -109,6 +109,15 @@ public class PrizeService {
         return saved;
     }
 
+    /**
+     * How many missing pictures may be fetched back (from Drive or BGG) at the same time.
+     * After a restart the cache is empty and a page of thumbnails asks for them all at
+     * once; each fetch holds a whole file in memory, so the rest wait their turn briefly
+     * and give up (a 404 the browser retries later) rather than pile up.
+     */
+    static final int CONCURRENT_RESTORES = 2;
+    private static final java.util.concurrent.Semaphore restores = new java.util.concurrent.Semaphore(CONCURRENT_RESTORES, true);
+
     /** How long a cached BGG rating is trusted before it is refreshed. */
     public static final Duration RATING_MAX_AGE = Duration.ofDays(30);
 
@@ -192,11 +201,31 @@ public class PrizeService {
         if (imageFile == null || !PrizeImageStore.FILE_NAME.matcher(imageFile).matches()) {
             return Optional.empty();
         }
-        Optional<PrizePicture> uploaded = pictures.findByFileName(imageFile);
-        if (uploaded.isPresent()) {
-            return restoreUpload(uploaded.get());
+        boolean turn;
+        try {
+            turn = restores.tryAcquire(20, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
         }
-        return prizes.findByImageFile(imageFile).flatMap(this::restoreBggImage);
+        if (!turn) {
+            log.info("Too many pictures being fetched back at once; {} will be asked for again", imageFile);
+            return Optional.empty();
+        }
+        try {
+            // Another request may have restored it while this one waited.
+            Optional<Path> already = images.resolve(imageFile);
+            if (already.isPresent()) {
+                return already;
+            }
+            Optional<PrizePicture> uploaded = pictures.findByFileName(imageFile);
+            if (uploaded.isPresent()) {
+                return restoreUpload(uploaded.get());
+            }
+            return prizes.findByImageFile(imageFile).flatMap(this::restoreBggImage);
+        } finally {
+            restores.release();
+        }
     }
 
     /** An organizer's picture back from Google Drive; failing that, the prize's BGG box image. */

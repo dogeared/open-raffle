@@ -290,8 +290,12 @@ orientation so portrait photos stay upright) and shrunk to a 1600px long edge; J
 decoded with TwelveMonkeys' reader so embedded colour profiles are honoured, PNG profiles
 are applied as well (iPhone HDR photos are tone-mapped to sRGB), and JPEGs are saved at
 quality 0.9. GIFs become still PNGs. Uploads are streamed to temporary files, big photos are decoded at
-a reduced resolution, and pictures are processed one at a time (`raffle.uploads.concurrent`),
-so a batch of phone photos fits in a 512 MB instance. The upload's bytes and name are never stored: files get app-minted
+a reduced resolution, pictures are processed one at a time (`raffle.uploads.concurrent`),
+at most 8 uploads are received at once server-wide, and the size, count and type limits
+are enforced on the server as well as in the browser. The `Dockerfile` sizes the JVM for
+a 512 MB instance (heap 35% of memory, serial GC, trimmed stacks and code cache); the
+process stays under about 430 MB through batches of six 12-megapixel HDR uploads. If you
+run it with more memory, raise `-XX:MaxRAMPercentage` in `JAVA_TOOL_OPTIONS`. The upload's bytes and name are never stored: files get app-minted
 names, live outside the web root and are served only through `/images/<name>` with a fixed
 content type and `nosniff`. Only organizers of the event (or admins) can add, reorder or
 remove a prize's pictures, and a prize holds at most 10.
