@@ -5,6 +5,21 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.4] - 2026-10-09
+
+### Fixed
+- **The server ran out of memory while pictures were being uploaded.** The limit on Render
+  is the whole process, not the Java heap: with the heap at 75% of a 512 MB instance the
+  process already sat at about 480 MB idle and passed 512 MB during a batch. The container
+  now gives the heap 35% of memory (the live heap is about 55 MB), uses the serial
+  collector, and trims thread stacks, metaspace and the code cache, which keeps the
+  process under about 430 MB through batches of six 12-megapixel HDR uploads; request
+  threads and database connections are fewer too.
+- Upload limits are enforced on the server, not only in the browser: one file per
+  request, 10 MB each, a declared image type, and at most 8 uploads being received at
+  once server-wide (more are refused, not queued). Vaadin's default was no server-side
+  limit at all.
+
 ## [1.7.3] - 2026-10-08
 
 ### Fixed

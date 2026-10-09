@@ -17,6 +17,10 @@ RUN useradd --system --uid 10001 raffle \
 COPY --from=build /workspace/target/open-raffle-*.jar app.jar
 USER raffle
 EXPOSE 8080
-# Size the heap from the container's memory limit rather than the host's.
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0"
+# Fit a 512 MB container: the heap is only part of the process (metaspace, symbols, code
+# cache and thread stacks add ~230 MB outside it), so the heap gets 35% of RAM (~180 MB;
+# the live heap after a collection is ~55 MB, so that is ample),
+# the serial collector keeps GC overhead small, stacks and the code cache are trimmed, and
+# the JVM exits (to be restarted) rather than limp on if it ever does run out of heap.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=35.0 -XX:+UseSerialGC -Xss512k -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m -XX:MaxDirectMemorySize=16m -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
