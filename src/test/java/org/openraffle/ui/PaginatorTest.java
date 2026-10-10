@@ -65,12 +65,16 @@ class PaginatorTest {
     }
 
     private void nextPage() {
-        // The next button is private; simulate it the way a click would.
-        paginator.getChildren()
+        // The next button is private (and nested in the pager group); simulate it the way a click would.
+        descendants(paginator)
                 .filter(c -> c instanceof com.vaadin.flow.component.button.Button b && "Next page".equals(b.getAriaLabel().orElse("")))
                 .findFirst()
                 .map(com.vaadin.flow.component.button.Button.class::cast)
                 .orElseThrow()
                 .click();
+    }
+
+    private static java.util.stream.Stream<com.vaadin.flow.component.Component> descendants(com.vaadin.flow.component.Component c) {
+        return c.getChildren().flatMap(child -> java.util.stream.Stream.concat(java.util.stream.Stream.of(child), descendants(child)));
     }
 }
