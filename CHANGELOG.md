@@ -5,6 +5,15 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.6] - 2026-10-10
+
+### Fixed
+- **A hover preview could get stuck open.** A quick pass of the pointer across a thumbnail
+  could open the picture after the pointer had already left, with nothing left to close
+  it (the delayed enter and leave events fired together). The delayed open now checks
+  that the pointer is still on the thumbnail, and while a preview is open the browser
+  closes it as soon as the pointer moves anywhere outside the picture and its thumbnail.
+
 ## [1.7.5] - 2026-10-10
 
 ### Changed
