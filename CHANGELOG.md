@@ -5,6 +5,13 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.7] - 2026-10-10
+
+### Added
+- The page controls show the page number in a box ("2 of 4") that can be typed into to
+  jump to a page; a number past the end goes to the last page, before the start to the
+  first.
+
 ## [1.7.6] - 2026-10-10
 
 ### Fixed
