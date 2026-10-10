@@ -13,7 +13,7 @@
 
     <groupId>org.openraffle</groupId>
     <artifactId>open-raffle</artifactId>
-    <version>1.7.4</version>
+    <version>1.7.5</version>
     <name>open-raffle</name>
     <description>Raffle management with physical ticket ranges, QR-code wishlists, and Keycloak OIDC login</description>
 

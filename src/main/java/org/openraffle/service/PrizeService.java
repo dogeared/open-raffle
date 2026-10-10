@@ -330,8 +330,9 @@ public class PrizeService {
         String name;
         String driveFileId;
         String contentType;
+        UploadedImage.Processed processed;
         try {
-            UploadedImage.Processed processed = UploadedImage.process(file, declaredContentType, fileName);
+            processed = UploadedImage.process(file, declaredContentType, fileName);
             contentType = processed.contentType();
             try {
                 name = images.store(current.getId(), processed.bytes(), processed.extension());
@@ -357,7 +358,19 @@ public class PrizeService {
         picture.setUploadedBy(user.isEmpty() ? null : user);
         current.getPictures().add(picture);
         prizes.save(current);
+        log.info("Picture added to prize {} ({}) in event {} by {}: {} {}x{} {} KB from a {} KB {} upload; {} of {} pictures",
+                current.getId(), current.getName(), current.getEvent().getId(), user.isEmpty() ? "?" : user,
+                name, processed.width(), processed.height(), processed.bytes().length / 1024,
+                uploadSize(file) / 1024, UploadedImage.extensionOf(fileName), current.getPictures().size(), Prize.MAX_PICTURES);
         return pictures.findByFileName(name).orElse(picture);
+    }
+
+    private static long uploadSize(Path file) {
+        try {
+            return Files.size(file);
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     /** Removes the picture from the prize, the local cache and (best effort) Drive. */
@@ -371,6 +384,8 @@ public class PrizeService {
         prizes.save(current);
         images.delete(picture.getFileName());
         drive.delete(picture.getDriveFileId());
+        log.info("Picture removed from prize {} ({}) by {}: {}; {} left", current.getId(), current.getName(),
+                currentUser.email().orElse("?"), picture.getFileName(), current.getPictures().size());
     }
 
     /** Moves the picture {@code delta} places (negative = towards the front); the first is the primary. */
