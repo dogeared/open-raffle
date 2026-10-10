@@ -68,12 +68,20 @@ public class Paginator<T> extends HorizontalLayout {
         pageSize.setAriaLabel("Items per page");
         pageSize.addValueChangeListener(e -> goTo(0));
         Span perPage = new Span("per page");
+        perPage.addClassNames(LumoUtility.Whitespace.NOWRAP);
 
-        summary.addClassNames(LumoUtility.TextColor.SECONDARY);
+        summary.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Whitespace.NOWRAP);
         addClassNames(LumoUtility.FontSize.SMALL);
         setAlignItems(FlexComponent.Alignment.CENTER);
         setWidthFull();
-        add(pageSize, perPage, summary, previous, pageNumber, pageCount, next);
+        // The arrows, the page box and its label move as one unit: on a phone they drop to a
+        // second line together rather than squeezing the labels or splitting the arrows.
+        HorizontalLayout pager = new HorizontalLayout(previous, pageNumber, pageCount, next);
+        pager.setAlignItems(FlexComponent.Alignment.CENTER);
+        pager.setSpacing(false);
+        pager.addClassNames(LumoUtility.Gap.XSMALL);
+        setWrap(true);
+        add(pageSize, perPage, summary, pager);
         expand(summary);
         summary.getStyle().set("text-align", "right");
     }
