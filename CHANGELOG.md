@@ -5,6 +5,13 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.5] - 2026-10-10
+
+### Changed
+- Every picture added or removed is logged (prize, event, who, stored size and
+  dimensions, upload size and type, count), so a session's uploads can be read off the
+  server log next to the memory metrics.
+
 ## [1.7.4] - 2026-10-09
 
 ### Fixed
