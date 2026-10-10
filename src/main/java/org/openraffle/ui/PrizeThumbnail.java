@@ -38,8 +38,15 @@ public final class PrizeThumbnail {
         image.getElement().setAttribute("tabindex", "0");
         fallBackToBgg(image, prize);
 
-        Preview preview = new Preview(prize);
+        Preview preview = new Preview(prize, image);
         image.addClickListener(e -> preview.pin());
+        // Raw pointer enter/leave keep an up-to-date "is the pointer on the thumbnail" flag; the
+        // delayed mouse enter below only opens the peek if the pointer is still there. A quick
+        // sweep across a thumbnail used to open the picture after the pointer had already gone,
+        // with nothing left to close it. (Different event names from the debounced ones below:
+        // Vaadin merges listeners of one name on the client, and the raw one would never fire.)
+        image.getElement().addEventListener("pointerenter", e -> preview.hovering(true));
+        image.getElement().addEventListener("pointerleave", e -> preview.hovering(false));
         image.getElement().addEventListener("mouseenter", e -> preview.peek()).debounce(HOVER_DELAY_MS);
         // The picture opens centred and often right over the thumbnail, which then sees a
         // mouseleave at once; so leaving the thumbnail only closes the peek if the pointer
@@ -78,21 +85,38 @@ public final class PrizeThumbnail {
      */
     static final class Preview {
         private final Prize prize;
+        private final Image thumbnail;
         private Dialog dialog;
         private boolean pinned;
         private boolean overPicture;
+        private boolean hovering;
 
-        Preview(Prize prize) {
+        Preview(Prize prize, Image thumbnail) {
             this.prize = prize;
+            this.thumbnail = thumbnail;
+        }
+
+        void hovering(boolean onThumbnail) {
+            hovering = onThumbnail;
         }
 
         /** Hover: a non-modal glimpse. Stays while the pointer rests on the thumbnail or the picture. */
         void peek() {
+            if (!hovering) {
+                return; // the pointer swept past before the delay ran out
+            }
             if (dialog != null && dialog.isOpened()) {
                 return;
             }
             pinned = false;
             open(false);
+        }
+
+        /** The browser's safety net saw the pointer away from both the picture and the thumbnail. */
+        void pointerAway() {
+            if (!pinned && dialog != null) {
+                dialog.close();
+            }
         }
 
         void leftThumbnail() {
@@ -137,10 +161,31 @@ public final class PrizeThumbnail {
             dialog.add(frame);
             if (modal) {
                 dialog.getFooter().add(new Button("Close", e -> dialog.close()));
+            } else {
+                // Whatever order the enter/leave events arrived in, a pointer seen outside both the
+                // picture and its thumbnail means the peek is over.
+                frame.getElement().addEventListener("peek-leave", e -> pointerAway());
+                frame.getElement().executeJs(POINTER_WATCH, thumbnail.getElement());
             }
             dialog.open();
         }
     }
+
+    /**
+     * Runs in the browser while a peek is open: on every pointer move, if the pointer is
+     * outside the picture (this) and outside its thumbnail ($0), tells the server. Stops
+     * itself once the picture is gone from the page.
+     */
+    static final String POINTER_WATCH = "const frame = this, thumb = $0;"
+            + " const inside = (el, x, y) => { const r = el.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; };"
+            + " const onMove = e => {"
+            + "   if (!frame.isConnected) { document.removeEventListener('mousemove', onMove); return; }"
+            + "   if (!inside(frame, e.clientX, e.clientY) && !(thumb.isConnected && inside(thumb, e.clientX, e.clientY))) {"
+            + "     document.removeEventListener('mousemove', onMove);"
+            + "     frame.dispatchEvent(new CustomEvent('peek-leave'));"
+            + "   }"
+            + " };"
+            + " document.addEventListener('mousemove', onMove);";
 
     /**
      * The full-size view: the primary picture with BGG's rating badge over its lower right

@@ -130,8 +130,22 @@ class PrizeListViewTest extends KaribuTest {
         assertThat(pinned.isOpened()).isTrue();
     }
 
-    /** The mouseenter listener is debounced, so the client sends it with a trailing phase. */
+    /** The pointer arrives (raw enter) and rests long enough for the debounced enter to fire. */
     private static void hover(Image thumbnail) {
+        enter(thumbnail);
+        delayedEnter(thumbnail);
+    }
+
+    private static void enter(Image thumbnail) {
+        _fireDomEvent(thumbnail, "pointerenter", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+    }
+
+    private static void rawLeave(Image thumbnail) {
+        _fireDomEvent(thumbnail, "pointerleave", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+    }
+
+    /** The debounced mouseenter, which the client sends with a trailing phase. */
+    private static void delayedEnter(Image thumbnail) {
         var data = tools.jackson.databind.json.JsonMapper.shared().createObjectNode();
         data.put(com.vaadin.flow.shared.JsonConstants.EVENT_DATA_PHASE, com.vaadin.flow.dom.DebouncePhase.TRAILING.getIdentifier());
         _fireDomEvent(thumbnail, "mouseenter", data);
@@ -151,6 +165,37 @@ class PrizeListViewTest extends KaribuTest {
 
     private static Div frame(Dialog dialog) {
         return _get(dialog, Div.class, spec -> spec.withClasses("prize-picture-frame"));
+    }
+
+    @Test
+    void aQuickSweepAcrossAThumbnailDoesNotLeaveThePictureOpen() {
+        Event fair = event("Spring fair", "pat@example.com");
+        Prize bike = prize(fair, "Bike");
+        bike.setImageFile("prize-1-0123456789abcdef.png");
+        prizes.save(bike);
+        start();
+        navigate("e/spring-fair");
+        Image thumbnail = _get(Image.class);
+
+        // The pointer enters and leaves within the hover delay; the delayed enter then fires,
+        // and the delayed leave too (in either order). The old code opened the picture here.
+        enter(thumbnail);
+        rawLeave(thumbnail);
+        leave(thumbnail);
+        delayedEnter(thumbnail);
+        _assertNone(Dialog.class, spec -> spec.withPredicate(Dialog::isOpened));
+
+        // A real hover still works afterwards, and the browser's safety net can close it.
+        hover(thumbnail);
+        Dialog peek = _get(Dialog.class, spec -> spec.withPredicate(Dialog::isOpened));
+        _fireDomEvent(frame(peek), "peek-leave", tools.jackson.databind.json.JsonMapper.shared().createObjectNode());
+        assertThat(peek.isOpened()).isFalse();
+
+        // The safety net is only wired to peeks: a pinned (clicked) picture has no such listener.
+        _click(thumbnail);
+        Dialog pinned = _get(Dialog.class, spec -> spec.withPredicate(Dialog::isOpened));
+        assertThat(pinned.isModal()).isTrue();
+        assertThat(pinned.isOpened()).isTrue();
     }
 
     @Test
