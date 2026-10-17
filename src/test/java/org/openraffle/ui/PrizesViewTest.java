@@ -10,6 +10,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.upload.Upload;
@@ -262,9 +263,13 @@ class PrizesViewTest extends KaribuTest {
         assertThat(_size(grid())).isEqualTo(10);
         assertThat(_getFormattedRow(grid(), 9)).containsSubsequence("10", "Prize 10");
         assertThat(_get(Span.class, spec -> spec.withText("1–10 of 14"))).isNotNull();
+        IntegerField pageNumber = _get(IntegerField.class, spec -> spec.withPredicate(f -> "Page number".equals(f.getAriaLabel().orElse(""))));
+        assertThat(pageNumber.getValue()).isEqualTo(1);
+        assertThat(_get(Span.class, spec -> spec.withText("of 2"))).isNotNull();
 
         _click(_get(Button.class, spec -> spec.withPredicate(b -> "Next page".equals(b.getAriaLabel().orElse("")))));
 
+        assertThat(pageNumber.getValue()).isEqualTo(2);
         assertThat(_size(grid())).isEqualTo(4);
         assertThat(_getFormattedRow(grid(), 0)).containsSubsequence("11", "Prize 11");
         assertThat(_get(Span.class, spec -> spec.withText("11–14 of 14"))).isNotNull();
@@ -273,5 +278,31 @@ class PrizesViewTest extends KaribuTest {
 
         assertThat(_size(grid())).isEqualTo(14);
         assertThat(_get(Span.class, spec -> spec.withText("1–14 of 14"))).isNotNull();
+    }
+
+    @Test
+    void typingAPageNumberJumpsThereAndOutOfRangeNumbersAreClamped() {
+        Event fair = event("Spring fair", "pat@example.com");
+        IntStream.rangeClosed(1, 34).forEach(i -> prize(fair, String.format("Prize %02d", i)));
+        loginAsOrganizer("pat@example.com");
+        start();
+        navigate("events/" + fair.getId());
+        IntegerField pageNumber = _get(IntegerField.class, spec -> spec.withPredicate(f -> "Page number".equals(f.getAriaLabel().orElse(""))));
+        assertThat(_get(Span.class, spec -> spec.withText("of 4"))).isNotNull();
+
+        _setValue(pageNumber, 3);
+        assertThat(_get(Span.class, spec -> spec.withText("21–30 of 34"))).isNotNull();
+        assertThat(_getFormattedRow(grid(), 0)).containsSubsequence("21", "Prize 21");
+
+        _setValue(pageNumber, 99); // past the end: the last page, and the box shows it
+        assertThat(_get(Span.class, spec -> spec.withText("31–34 of 34"))).isNotNull();
+        assertThat(pageNumber.getValue()).isEqualTo(4);
+
+        _setValue(pageNumber, 0); // before the start: the first page
+        assertThat(_get(Span.class, spec -> spec.withText("1–10 of 34"))).isNotNull();
+        assertThat(pageNumber.getValue()).isEqualTo(1);
+
+        _setValue(pageNumber, null); // cleared: stays put and shows the page again
+        assertThat(pageNumber.getValue()).isEqualTo(1);
     }
 }
