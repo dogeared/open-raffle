@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CVE-2026-92877, no fixed release yet). Hibernate uses it only for XML mapping files, and
   this app has none.
 
+### Changed
+- The pre-push Snyk hook blocks only on high or critical findings and uses the first
+  `snyk` on the PATH that runs, so a stale asdf/nvm shim no longer fails the push.
+
 ## [1.7.7] - 2026-10-10
 
 ### Added

@@ -1,18 +1,28 @@
 #!/usr/bin/env bash
-# Runs Snyk's dependency and code scans before every push; a finding blocks the push.
+# Runs Snyk's dependency and code scans before every push; a high or critical finding
+# blocks the push (mediums and lows are reported but let through).
 #
 # Enable once per clone:   git config core.hooksPath .githooks
 # Skip for one push:       git push --no-verify
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-if ! command -v snyk >/dev/null 2>&1; then
-    echo "pre-push: snyk CLI not found (brew install snyk-cli, then snyk auth); skipping the scan." >&2
+# The first snyk on the PATH that actually runs: a version-manager shim (asdf, nvm) left
+# over from an npm install under another Node version comes first but fails.
+SNYK=""
+while IFS= read -r candidate; do
+    if "$candidate" --version >/dev/null 2>&1; then
+        SNYK="$candidate"
+        break
+    fi
+done < <(type -aP snyk || true)
+if [[ -z "$SNYK" ]]; then
+    echo "pre-push: no working snyk CLI found (brew install snyk-cli, then snyk auth); skipping the scan." >&2
     exit 0
 fi
 
 echo "pre-push: snyk test (dependencies)…"
-snyk test
+"$SNYK" test --severity-threshold=high
 echo "pre-push: snyk code test (static analysis)…"
-snyk code test
-echo "pre-push: snyk found nothing; pushing."
+"$SNYK" code test --severity-threshold=high
+echo "pre-push: snyk found nothing high or critical; pushing."
