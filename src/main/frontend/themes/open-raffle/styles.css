@@ -32,14 +32,15 @@ vaadin-grid-cell-content vaadin-button::part(label) {
   }
 }
 
-/* The wishlist summary in the participants grid stays on one line with an ellipsis. */
-vaadin-grid-cell-content vaadin-button.wishlist-summary,
-vaadin-grid-cell-content vaadin-button.wishlist-summary::part(label) {
+/* A list summarised in one grid cell (a participant's wishlist, a claimant's prizes) stays
+   on one line with an ellipsis; clicking it opens the full list. */
+vaadin-grid-cell-content vaadin-button.cell-summary,
+vaadin-grid-cell-content vaadin-button.cell-summary::part(label) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-vaadin-grid-cell-content vaadin-button.wishlist-summary {
+vaadin-grid-cell-content vaadin-button.cell-summary {
   display: block;
   max-width: 100%;
   min-height: var(--lumo-size-s);

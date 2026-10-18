@@ -5,6 +5,15 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.9] - 2026-10-18
+
+### Changed
+- **The Reports page groups claims by participant.** One row per person who took a prize,
+  with their prizes A to Z in one comma-separated cell that stays on one line and opens the
+  full list (with when each was claimed) when clicked, like the wishlist on the Participants
+  page. Tickets and phone appear once per person; When is their most recent claim. Claimed
+  by, Prizes and When sort the whole report. The summary line adds how many participants.
+
 ## [1.7.8] - 2026-10-18
 
 ### Added

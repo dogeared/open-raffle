@@ -103,7 +103,7 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
             open.setTooltipText(summary);
             // One line with an ellipsis: the dialog has the full list, and organizers are on
             // laptops or tablets where this column has room.
-            open.addClassNames("wishlist-summary");
+            open.addClassNames("cell-summary");
             return open;
         }).setHeader("Wishlist (in order)").setKey("wishlist").setWidth("8em").setFlexGrow(3);
         grid.addComponentColumn(p -> {
