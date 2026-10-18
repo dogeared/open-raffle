@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   how many tickets they hold between them, across every page, under the Name and Tickets
   columns (which stay visible on a phone).
 
+### Security
+- The JAXB runtime that Hibernate pulls in is excluded (jaxb-core 4.0.9, XXE,
+  CVE-2026-92877, no fixed release yet). Hibernate uses it only for XML mapping files, and
+  this app has none.
+
 ## [1.7.7] - 2026-10-10
 
 ### Added

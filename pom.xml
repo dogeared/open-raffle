@@ -58,6 +58,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <exclusions>
+                <!-- Hibernate only needs JAXB to read XML mapping files (orm.xml, hbm.xml), and
+                     this app has none: every mapping is an annotation. jaxb-core 4.0.9 has an
+                     unfixed XXE (CVE-2026-92877, snyk test); drop the exclusion once a fixed
+                     release exists and Boot manages it. -->
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-runtime</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
