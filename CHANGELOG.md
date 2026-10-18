@@ -5,6 +5,22 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.8] - 2026-10-18
+
+### Added
+- The participants table has a footer with the event's totals: how many participants and
+  how many tickets they hold between them, across every page, under the Name and Tickets
+  columns (which stay visible on a phone).
+
+### Security
+- The JAXB runtime that Hibernate pulls in is excluded (jaxb-core 4.0.9, XXE,
+  CVE-2026-92877, no fixed release yet). Hibernate uses it only for XML mapping files, and
+  this app has none.
+
+### Changed
+- The pre-push Snyk hook blocks only on high or critical findings and uses the first
+  `snyk` on the PATH that runs, so a stale asdf/nvm shim no longer fails the push.
+
 ## [1.7.7] - 2026-10-10
 
 ### Added

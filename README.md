@@ -25,7 +25,8 @@ for Docker.
    printed on the roll: plain numbers (`1 – 100`) or dashed prefixes (`987-001 – 987-100`,
    `4563-100-300 – 4563-100-1000`); everything up to the last dash is the prefix, so
    `4563-100` and `4564-100` are different tickets. Ranges that overlap another
-   participant's (or each other) are rejected.
+   participant's (or each other) are rejected. The table's footer totals the event:
+   participants and tickets sold.
 4. **QR code** — the app shows (and can download) a QR code per participant. It opens a
    login-free page, identified by an unguessable token, where they rank the prizes they
    want.
@@ -204,16 +205,19 @@ gist that the README badge reads.
 ## Security scanning
 
 A pre-push hook runs [Snyk](https://snyk.io)'s dependency scan (`snyk test`) and static
-analysis (`snyk code test`) and blocks the push if either finds anything. Git does not
-install hooks from a clone, so enable it once:
+analysis (`snyk code test`) and blocks the push if either finds a high or critical issue
+(mediums and lows are reported but let through). Git does not install hooks from a clone,
+so enable it once:
 
 ```sh
 brew install snyk-cli && snyk auth      # once per machine
 git config core.hooksPath .githooks     # once per clone
 ```
 
-`git push --no-verify` skips it for one push. The hook is a no-op when the `snyk` CLI is
-not installed, so it never blocks a machine that lacks it.
+`git push --no-verify` skips it for one push. The hook is a no-op when no working `snyk`
+CLI is found, so it never blocks a machine that lacks it. It uses the first `snyk` on the
+PATH that runs, stepping past a stale version-manager shim (asdf, nvm) left by an npm
+install under another Node version.
 
 ## Changelog
 
