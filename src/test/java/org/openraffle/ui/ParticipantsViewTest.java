@@ -36,6 +36,11 @@ class ParticipantsViewTest extends KaribuTest {
         return _get(Grid.class);
     }
 
+    /** The footer cell under a column: the totals for the whole event. */
+    private static String total(String columnKey) {
+        return grid().getFooterRows().get(0).getCell(grid().getColumnByKey(columnKey)).getText();
+    }
+
     /** The tickets cell of a grid row, as shown on screen. */
     private static String tickets(int row) {
         return TicketRangeLabelTest.shown((TicketRangeLabel) _getCellComponent(grid(), row, "tickets"));
@@ -76,6 +81,8 @@ class ParticipantsViewTest extends KaribuTest {
 
         assertThat(_size(grid())).isEqualTo(1);
         assertThat(tickets(0)).isEqualTo("100 – 104");
+        assertThat(total("name")).isEqualTo("1 participant");
+        assertThat(total("tickets")).isEqualTo("5 tickets");
         assertThat(_getFormattedRow(grid(), 0)).contains("5").doesNotContain("+44 20 7946 0958");
         Participant ann = participants.findAll().get(0);
         assertThat(ann.getPhone()).isEqualTo("+44 20 7946 0958");
@@ -233,6 +240,8 @@ class ParticipantsViewTest extends KaribuTest {
 
         assertThat(participants.count()).isZero();
         assertThat(_size(grid())).isZero();
+        assertThat(total("name")).isEqualTo("0 participants");
+        assertThat(total("tickets")).isEqualTo("0 tickets");
         expectNotifications("Participant deleted");
     }
 
@@ -247,6 +256,9 @@ class ParticipantsViewTest extends KaribuTest {
         navigate("events/" + fair.getId() + "/participants");
 
         assertThat(_size(grid())).isEqualTo(10);
+        // The footer totals the whole event, not the page.
+        assertThat(total("name")).isEqualTo("12 participants");
+        assertThat(total("tickets")).isEqualTo("72 tickets");
         assertThat(((Button) _getCellComponent(grid(), 0, "name")).getText()).isEqualTo("Person N");
         assertThat(((Button) _getCellComponent(grid(), 9, "name")).getText()).isEqualTo("Person W");
         assertThat(_get(com.vaadin.flow.component.html.Span.class, spec -> spec.withText("1–10 of 12"))).isNotNull();

@@ -25,7 +25,8 @@ for Docker.
    printed on the roll: plain numbers (`1 – 100`) or dashed prefixes (`987-001 – 987-100`,
    `4563-100-300 – 4563-100-1000`); everything up to the last dash is the prefix, so
    `4563-100` and `4564-100` are different tickets. Ranges that overlap another
-   participant's (or each other) are rejected.
+   participant's (or each other) are rejected. The table's footer totals the event:
+   participants and tickets sold.
 4. **QR code** — the app shows (and can download) a QR code per participant. It opens a
    login-free page, identified by an unguessable token, where they rank the prizes they
    want.

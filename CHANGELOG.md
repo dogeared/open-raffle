@@ -5,6 +5,13 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.8] - 2026-10-18
+
+### Added
+- The participants table has a footer with the event's totals: how many participants and
+  how many tickets they hold between them, across every page, under the Name and Tickets
+  columns (which stay visible on a phone).
+
 ## [1.7.7] - 2026-10-10
 
 ### Added

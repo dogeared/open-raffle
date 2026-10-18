@@ -5,6 +5,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
@@ -49,6 +50,7 @@ import org.openraffle.ui.TicketRangeList;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Route(value = "events/:eventId/participants", layout = MainLayout.class)
@@ -61,6 +63,8 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
     private final EventService eventService;
     private final Grid<Participant> grid = new Grid<>(Participant.class, false);
     private final Paginator<Participant> pages = new Paginator<>(grid::setItems);
+    /** Totals for the whole event (every page), under the Name and Tickets columns. */
+    private final FooterRow totals;
     private Event event;
 
     public ParticipantsView(ParticipantService participantService, QrCodeService qrCodeService, EventService eventService) {
@@ -119,6 +123,8 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
         // count column gives way.
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT);
         ResponsiveColumns.hideOnNarrowScreens(grid, List.of(count));
+        // The totals go under Name and Tickets, which stay visible on a phone (Count does not).
+        totals = grid.appendFooterRow();
         grid.setSizeFull();
 
         add(toolbar, grid, pages);
@@ -139,7 +145,16 @@ public class ParticipantsView extends VerticalLayout implements BeforeEnterObser
     }
 
     private void refresh() {
-        pages.setItems(participantService.findAll(event));
+        List<Participant> all = participantService.findAll(event);
+        pages.setItems(all);
+        long sold = all.stream().mapToLong(Participant::getTicketCount).sum();
+        totals.getCell(grid.getColumnByKey("name")).setText(plural(all.size(), "participant"));
+        totals.getCell(grid.getColumnByKey("tickets")).setText(plural(sold, "ticket"));
+    }
+
+    /** "1 ticket", "1,321 tickets". */
+    static String plural(long n, String noun) {
+        return String.format(Locale.US, "%,d %s%s", n, noun, n == 1 ? "" : "s");
     }
 
     private void openEditor(Participant participant) {
