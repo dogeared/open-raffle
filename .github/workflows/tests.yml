@@ -129,11 +129,12 @@ jobs:
         id: version
         run: |
           python3 - <<'EOF' >> "$GITHUB_OUTPUT"
-          import re
-          pom = open("pom.xml").read()
-          m = re.search(r"</parent>\s*<version>([^<]+)</version>", pom) or \
-              re.search(r"<version>([^<]+)</version>", pom)
-          print(f"value={m.group(1)}")
+          import xml.etree.ElementTree as ET
+          ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+          root = ET.parse("pom.xml").getroot()
+          version = root.findtext("m:version", namespaces=ns) or \
+              root.findtext("m:parent/m:version", namespaces=ns)
+          print(f"value={version}")
           EOF
 
       - uses: docker/setup-buildx-action@v3
