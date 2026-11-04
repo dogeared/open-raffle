@@ -111,3 +111,54 @@ jobs:
           git tag -a "$TAG" -m "Open Raffle $VERSION"
           git push origin "$TAG"
           echo "Pushed $TAG at $(git rev-parse --short HEAD)"
+
+  # Publishes the NAS's copy of this app. The Synology pulls `:latest` on a timer;
+  # `:sha-<short>` and the version tag are there for pinning a rollback.
+  publish:
+    name: Publish image
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import re
+          pom = open("pom.xml").read()
+          m = re.search(r"</parent>\s*<version>([^<]+)</version>", pom) or \
+              re.search(r"<version>([^<]+)</version>", pom)
+          print(f"value={m.group(1)}")
+          EOF
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/dogeared/open-raffle
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short,prefix=sha-
+            type=raw,value=${{ steps.version.outputs.value }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
