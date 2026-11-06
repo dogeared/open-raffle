@@ -112,7 +112,7 @@ jobs:
           git push origin "$TAG"
           echo "Pushed $TAG at $(git rev-parse --short HEAD)"
 
-  # Publishes the NAS's copy of this app. The Synology pulls `:latest` on a timer;
+  # Publishes the NAS's copy of this app. The Synology pulls `:latest` over the deploy webhook;
   # `:sha-<short>` and the version tag are there for pinning a rollback.
   publish:
     name: Publish image
@@ -164,10 +164,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # The timer is a backstop; this is the Render-like path. The agent is reachable
-  # only through the NAS's Cloudflare tunnel and authorises each call with an
-  # HMAC over "<timestamp>.<body>". If the secrets are not set, skip: the timer
-  # will pick the image up on its next pass.
+  # This is the only deploy path: the agent is reachable only through the NAS's
+  # Cloudflare tunnel and authorises each call with an HMAC over
+  # "<timestamp>.<body>". Missing secrets are a setup error, so fail loudly
+  # rather than leave the NAS on the previous image.
   deploy:
     name: Deploy to NAS
     runs-on: ubuntu-latest
@@ -181,8 +181,8 @@ jobs:
           PROJECT: open-raffle
         run: |
           if [ -z "$DEPLOY_WEBHOOK_URL" ] || [ -z "$DEPLOY_WEBHOOK_SECRET" ]; then
-            echo "::notice::deploy webhook not configured; the NAS timer will pick this up"
-            exit 0
+            echo "::error::DEPLOY_WEBHOOK_URL / DEPLOY_WEBHOOK_SECRET are not set"
+            exit 1
           fi
           BODY=$(printf '{"project":"%s","sha":"%s"}' "$PROJECT" "$GITHUB_SHA")
           TS=$(date +%s)
