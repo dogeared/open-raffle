@@ -5,6 +5,15 @@ All notable changes to Open Raffle are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-11-06
+
+### Security
+- Tomcat `tomcat-embed-core` 11.0.26 → 11.0.27 and Jackson `jackson-databind`
+  3.1.7 → 3.1.8, closing three critical advisories (authentication step
+  bypass, access-control bypass, and unsafe deserialization). Both versions
+  are ahead of what Spring Boot 4.0.8 manages, so the existing property
+  overrides move forward.
+
 ## [1.7.9] - 2026-10-18
 
 ### Changed
